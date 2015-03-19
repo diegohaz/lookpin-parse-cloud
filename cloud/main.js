@@ -270,3 +270,32 @@ Parse.Cloud.define('unecho', function(request, response) {
     response.error(error.message);
   });
 });
+
+/**
+ * Follow a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('follow', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Follow
+  shout.fetch().then(function(shout) {
+    user.addUnique('following', shout);
+
+    return user.save();
+  })
+  .then(function() {
+    response.success(shout);
+  }, response.error);
+});
