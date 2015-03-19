@@ -230,3 +230,43 @@ Parse.Cloud.define('echo', function(request, response) {
     response.error(error.message);
   });
 });
+
+/**
+ * Unecho a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('unecho', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Unecho
+  shout.fetch().then(function(shout) {
+    // Verify if user already echoed the shout
+    var echoed = _.find(user.get('echoed'), {id: shout.id});
+
+    if (echoed) {
+      shout.increment('echoes', -1);
+      user.remove('echoed', shout);
+      user.remove('following', shout);
+
+      return Parse.Object.saveAll([shout, user]);
+    } else {
+      return Parse.Promise.error('Cannot unecho a unechoed shout');
+    }
+  })
+  .then(function() {
+    response.success(shout);
+  }, function(error) {
+    response.error(error.message);
+  });
+});
