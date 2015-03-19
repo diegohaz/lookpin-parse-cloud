@@ -1,10 +1,9 @@
 var _ = require('underscore');
 var names = require('cloud/names.js');
+var validations = require('cloud/validations');
 
 /**
  * Validate user and set defaults
- *
- * @todo Validate feeling and nickname
  */
 Parse.Cloud.beforeSave(Parse.User, function(request, response) {
   var nickname = request.object.get('nickname');
@@ -17,6 +16,16 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
   request.object.get('removed')   || request.object.set('removed', []);
   request.object.get('following') || request.object.set('following', []);
   request.object.get('language')  || request.object.set('language', 'en');
+
+  // Validate nickname
+  if (nickname && !validations.nickname(nickname)) {
+    return response.error('Invalid nickname');
+  }
+
+  // Validate feeling
+  if (feeling && !validations.feeling(feeling)) {
+    return response.error('Invalid feeling');
+  }
 
   response.success();
 });
@@ -103,8 +112,6 @@ Parse.Cloud.define('getAdjectives', function(request, response) {
 /**
  * Get nicknames
  *
- * @todo Validate feeling
- *
  * @param {string} [language]
  * @param {string} [feeling]
  * @param {int} [limit=1] Number of nicknames to return
@@ -117,7 +124,10 @@ Parse.Cloud.define('getNicknames', function(request, response) {
   var feeling = request.params.feeling || request.user.get('feeling');
   var limit = request.params.limit || 1;
 
-  // Validate
+  // Validations
+  if (!validations.feeling(feeling))
+    return response.error('Invalid feeling');
+
   if (!(lang in names.nouns))
     return response.error('Invalid language');
 
@@ -146,8 +156,6 @@ Parse.Cloud.define('getNicknames', function(request, response) {
 /**
  * Create a shout
  *
- * @todo Validate nickname and feeling
- *
  * @param {string} content
  *
  * @response {Parse.Object} Shout object
@@ -168,6 +176,14 @@ Parse.Cloud.define('shout', function(request, response) {
   if (!content)               return response.error('Empty content');
 
   // More validations
+  if (!validations.nickname(user.nickname)) {
+    return response.error('Invalid nickname');
+  }
+
+  if (!validations.feeling(user.feeling)) {
+    return response.error('Invalid feeling');
+  }
+
   if (content.length > 255) {
     return response.error('Content should not be larger than 255 characters');
   }
@@ -207,8 +223,6 @@ Parse.Cloud.define('shout', function(request, response) {
 /**
  * Comment a shout
  *
- * @todo Validate nickname
- *
  * @param {string} shoutId
  * @param {string} content
  *
@@ -230,6 +244,10 @@ Parse.Cloud.define('comment', function(request, response) {
   if (!content)               return response.error('Empty content');
 
   // More validations
+  if (!validations.nickname(user.nickname)) {
+    return response.error('Invalid nickname');
+  }
+
   if (content.length > 255) {
     return response.error('Content should not be larger than 255 characters');
   }
