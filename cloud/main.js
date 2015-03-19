@@ -279,8 +279,6 @@ Parse.Cloud.define('unecho', function(request, response) {
  * @response {Parse.Object} Shout object
  */
 Parse.Cloud.define('follow', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
   // Params
   var shoutId = request.params.shoutId;
   var user = request.user;
@@ -308,8 +306,6 @@ Parse.Cloud.define('follow', function(request, response) {
  * @response {Parse.Object} Shout object
  */
 Parse.Cloud.define('unfollow', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
   // Params
   var shoutId = request.params.shoutId;
   var user = request.user;
@@ -357,7 +353,32 @@ Parse.Cloud.define('remove', function(request, response) {
   })
   .then(function() {
     response.success(shout);
-  }, function(error) {
-    response.error(error.message);
-  });
+  }, response.error);
+});
+
+/**
+ * Restore a removed shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('restore', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Restore
+  shout.fetch().then(function(shout) {
+    user.remove('removed', shout);
+
+    return user.save();
+  })
+  .then(function() {
+    response.success(shout);
+  }, response.error);
 });
