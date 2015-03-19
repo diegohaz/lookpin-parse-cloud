@@ -116,6 +116,13 @@ Parse.Cloud.define('shout', function(request, response) {
 
   // Fetch place
   user.get('place').fetch().then(function(place) {
+    var acl = new Parse.ACL();
+
+    acl.setPublicReadAccess(true);
+    acl.setPublicWriteAccess(false);
+    acl.setWriteAccess(user, true);
+
+    shout.setACL(acl);
     shout.set('user', user);
     shout.set('nickname', user.get('nickname'));
     shout.set('location', user.get('location'));
@@ -174,6 +181,13 @@ Parse.Cloud.define('comment', function(request, response) {
   user.get('place').fetch().then(function(place) {
     return shout.fetch();
   }).then(function(shout) {
+    var acl = new Parse.ACL();
+
+    acl.setPublicReadAccess(true);
+    acl.setPublicWriteAccess(false);
+    acl.setWriteAccess(user, true);
+
+    comment.setACL(acl);
     comment.set('shout', shout);
     comment.set('user', user);
     comment.set('nickname', user.get('nickname'));
