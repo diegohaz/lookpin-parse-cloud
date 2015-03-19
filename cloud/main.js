@@ -202,7 +202,10 @@ Parse.Cloud.define('echo', function(request, response) {
 
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
@@ -243,7 +246,10 @@ Parse.Cloud.define('unecho', function(request, response) {
 
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
@@ -281,7 +287,10 @@ Parse.Cloud.define('unecho', function(request, response) {
 Parse.Cloud.define('follow', function(request, response) {
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
@@ -308,7 +317,10 @@ Parse.Cloud.define('follow', function(request, response) {
 Parse.Cloud.define('unfollow', function(request, response) {
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
@@ -335,7 +347,10 @@ Parse.Cloud.define('unfollow', function(request, response) {
 Parse.Cloud.define('remove', function(request, response) {
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
@@ -366,7 +381,10 @@ Parse.Cloud.define('remove', function(request, response) {
 Parse.Cloud.define('restore', function(request, response) {
   // Params
   var shoutId = request.params.shoutId;
+
+  // User
   var user = request.user;
+  if (!user) return response.error('User is not defined');
 
   // Object
   var shout = new Parse.Object('Shout');
