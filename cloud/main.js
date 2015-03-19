@@ -299,3 +299,32 @@ Parse.Cloud.define('follow', function(request, response) {
     response.success(shout);
   }, response.error);
 });
+
+/**
+ * Unfollow a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('unfollow', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Unfollow
+  shout.fetch().then(function(shout) {
+    user.remove('following', shout);
+
+    return user.save();
+  })
+  .then(function() {
+    response.success(shout);
+  }, response.error);
+});
