@@ -328,3 +328,36 @@ Parse.Cloud.define('unfollow', function(request, response) {
     response.success(shout);
   }, response.error);
 });
+
+/**
+ * Remove a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('remove', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Remove
+  shout.fetch().then(function(shout) {
+    // User is removing his own shout
+    if (shout.get('user').id == user.id) {
+      return shout.destroy();
+    } else {
+      user.addUnique('removed', shout);
+      return user.save();
+    }
+  })
+  .then(function() {
+    response.success(shout);
+  }, function(error) {
+    response.error(error.message);
+  });
+});
