@@ -89,7 +89,7 @@ Parse.Cloud.define('getNicknames', function(request, response) {
  *
  * @param {string} content
  *
- * @response {Parse.Object} shout
+ * @response {Parse.Object} Shout object
  */
 Parse.Cloud.define('shout', function(request, response) {
   Parse.Cloud.useMasterKey();
@@ -144,7 +144,7 @@ Parse.Cloud.define('shout', function(request, response) {
  * @param {string} shoutId
  * @param {string} content
  *
- * @response {Parse.Object} comment
+ * @response {Parse.Object} Comment object
  */
 Parse.Cloud.define('comment', function(request, response) {
   Parse.Cloud.useMasterKey();
@@ -188,4 +188,45 @@ Parse.Cloud.define('comment', function(request, response) {
 
     response.success(comment);
   }, response.error);
+});
+
+/**
+ * Echo a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('echo', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var shoutId = request.params.shoutId;
+  var user = request.user;
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id = shoutId;
+
+  // Echo
+  shout.fetch().then(function(shout) {
+    // Verify if user already echoed the shout
+    var echoed = _.findWHere(user.get('echoed'), {id: shout.id});
+
+    if (!echoed) {
+      shout.increment('echoes');
+      user.addUnique('echoed', shout);
+      user.addUnique('following', shout);
+      user.set('feeling', shout.get('feeling'));
+
+      return Parse.Object.saveAll([shout, user]);
+    } else {
+      return Parse.Promise.error('User cannot echo a shout twice');
+    }
+  })
+  .then(function() {
+    response.success(shout);
+  }, function(error) {
+    response.error(error.message);
+  });
 });
