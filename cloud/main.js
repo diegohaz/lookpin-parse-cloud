@@ -22,6 +22,67 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
 });
 
 /**
+ * Delete shout references
+ */
+Parse.Cloud.afterDelete('Shout', function(request) {
+  Parse.Cloud.useMasterKey();
+
+  // Object
+  var shout = request.object;
+
+  // Seek users which have references to shout
+  var wasEchoed = new Parse.Query('User');
+  wasEchoed.equalTo('echoed', shout);
+
+  var wasCommented = new Parse.Query('User');
+  wasCommented.equalTo('commented', shout);
+
+  var wasRemoved = new Parse.Query('User');
+  wasRemoved.equalTo('removed', shout);
+
+  var wasFollowed = new Parse.Query('User');
+  wasFollowed.equalTo('following', shout);
+
+  // Finally, query
+  var query = Parse.Query.or(wasEchoed, wasCommented, wasRemoved, wasFollowed);
+
+  query.find().then(function(users) {
+    var usersToSave = [];
+
+    for (var i = 0; i < users.length; i++) {
+      var user = users[i];
+
+      user.remove('echoed', shout);
+      user.remove('commented', shout);
+      user.remove('removed', shout);
+      user.remove('following', shout);
+
+      usersToSave.push(user);
+    }
+
+    if (usersToSave.length) {
+      Parse.Object.saveAll(usersToSave);
+    }
+  });
+
+  // Now, delete comments
+  query = new Parse.Query('Comment');
+  query.equalTo('shout', shout);
+
+  query.find().then(function(comments) {
+    var commentsToDestroy = [];
+
+    for (var i = 0; i < comments.length; i++) {
+      commentsToDestroy.push(comments[i]);
+    }
+
+    if (commentsToDestroy.length) {
+      Parse.Object.destroyAll(commentsToDestroy);
+    }
+  });
+});
+
+/**
  * Get adjectives
  *
  * @param {string} [language]

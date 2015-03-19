@@ -2,10 +2,13 @@
     "applications": {
         "_default": {
             "link": "shoutler-dev"
-        },
+        }, 
         "shoutler-dev": {
-            "applicationId": "lKa3RTv1OFKt5rj7r5jczuMRvWigKymWc3eZv69u",
+            "applicationId": "lKa3RTv1OFKt5rj7r5jczuMRvWigKymWc3eZv69u", 
             "masterKey": "xODJ6DL6QRdzd5NDgFX5Y2tMAe3Q1nUbp9ssHiDB"
         }
+    }, 
+    "global": {
+        "parseVersion": "1.3.5"
     }
 }
