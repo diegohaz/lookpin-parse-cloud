@@ -120,9 +120,9 @@ Parse.Cloud.define('getAdjectives', function(request, response) {
  */
 Parse.Cloud.define('getNicknames', function(request, response) {
   // Params
-  var lang = request.params.language || request.user.get('language') || 'en';
+  var lang    = request.params.language || request.user.get('language') || 'en';
   var feeling = request.params.feeling || request.user.get('feeling');
-  var limit = request.params.limit || 1;
+  var limit   = request.params.limit || 1;
 
   // Validations
   if (!validations.feeling(feeling))
@@ -132,15 +132,15 @@ Parse.Cloud.define('getNicknames', function(request, response) {
     return response.error('Invalid language');
 
   // Nicknames
-  var adjectives = names.adjectives[lang][feeling];
-  var nouns = names.nouns[lang];
-  var nicknames = [];
+  var adjectives  = names.adjectives[lang][feeling];
+  var nouns       = names.nouns[lang];
+  var nicknames   = [];
 
   // Iteration
   for (var i = 0; i < limit; i++) {
     var adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    var noun = nouns[Math.floor(Math.random() * nouns.length)];
-    var nickname = adjective + ' ' + noun;
+    var noun      = nouns[Math.floor(Math.random() * nouns.length)];
+    var nickname  = adjective + ' ' + noun;
 
     // Capitalize nickname
     nickname = nickname.replace(/(?:^|\s)\S/g, function(a) {
@@ -234,7 +234,7 @@ Parse.Cloud.define('comment', function(request, response) {
   // Params
   var shoutId = request.params.should;
   var content = request.params.content;
-  var user = request.user;
+  var user    = request.user;
 
   // Empty validations
   if (!user)                  return response.error('Empty user');
@@ -254,8 +254,8 @@ Parse.Cloud.define('comment', function(request, response) {
 
   // Object
   var comment = new Parse.Object('Comment');
-  var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  var shout   = new Parse.Object('Shout');
+  shout.id    = shoutId;
 
   user.get('place').fetch().then(function(place) {
     return shout.fetch();
@@ -302,7 +302,7 @@ Parse.Cloud.define('echo', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  shout.id  = shoutId;
 
   // Echo
   shout.fetch().then(function(shout) {
@@ -346,7 +346,7 @@ Parse.Cloud.define('unecho', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  shout.id  = shoutId;
 
   // Unecho
   shout.fetch().then(function(shout) {
@@ -387,7 +387,7 @@ Parse.Cloud.define('follow', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  shout.id  = shoutId;
 
   // Follow
   shout.fetch().then(function(shout) {
@@ -447,7 +447,7 @@ Parse.Cloud.define('remove', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  shout.id  = shoutId;
 
   // Remove
   shout.fetch().then(function(shout) {
@@ -481,7 +481,7 @@ Parse.Cloud.define('restore', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  shout.id  = shoutId;
 
   // Restore
   shout.fetch().then(function(shout) {
