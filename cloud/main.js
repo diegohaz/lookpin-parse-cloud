@@ -6,8 +6,8 @@ var validations = require('cloud/validations');
  * Validate user and set defaults
  */
 Parse.Cloud.beforeSave(Parse.User, function(request, response) {
-  var nickname = request.object.get('nickname');
-  var feeling = request.object.get('feeling');
+  var nickname  = request.object.get('nickname');
+  var feeling   = request.object.get('feeling');
 
   // Defaults
   request.object.get('setup')     || request.object.set('setup', false);
@@ -486,12 +486,6 @@ Parse.Cloud.define('restore', function(request, response) {
   shout.id  = shoutId;
 
   // Restore
-  shout.fetch().then(function(shout) {
-    user.remove('removed', shout);
-
-    return user.save();
-  })
-  .then(function() {
-    response.success(shout);
-  }, response.error);
+  user.remove('removed', shout);
+  user.save().then(function() { response.success(shout) }, response.error);
 });
