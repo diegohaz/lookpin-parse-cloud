@@ -422,12 +422,9 @@ Parse.Cloud.define('unfollow', function(request, response) {
   shout.id = shoutId;
 
   // Unfollow
-  shout.fetch().then(function(shout) {
-    user.remove('following', shout);
+  user.remove('following', shout);
 
-    return user.save();
-  })
-  .then(function() {
+  user.save().then(function() {
     response.success(shout);
   }, response.error);
 });
@@ -487,5 +484,8 @@ Parse.Cloud.define('restore', function(request, response) {
 
   // Restore
   user.remove('removed', shout);
-  user.save().then(function() { response.success(shout) }, response.error);
+
+  user.save().then(function() {
+    response.success(shout);
+  }, response.error);
 });
