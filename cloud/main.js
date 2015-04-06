@@ -162,7 +162,7 @@ Parse.Cloud.define('getNicknames', function(request, response) {
  *
  * @response {Parse.Object} Shout object
  */
-Parse.Cloud.define('createShout', function(request, response) {
+Parse.Cloud.define('shout', function(request, response) {
   Parse.Cloud.useMasterKey();
 
   // Params
