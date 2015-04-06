@@ -121,15 +121,17 @@ Parse.Cloud.define('getAdjectives', function(request, response) {
 Parse.Cloud.define('getNicknames', function(request, response) {
   // Params
   var lang    = request.params.language || request.user.get('language') || 'en';
-  var feeling = request.params.feeling || request.user.get('feeling');
-  var limit   = request.params.limit || 1;
+  var feeling = request.params.feeling  || request.user.get('feeling');
+  var limit   = request.params.limit    || 1;
 
   // Validations
-  if (!validations.feeling(feeling))
+  if (!validations.feeling(feeling)) {
     return response.error('Invalid feeling');
+  }
 
-  if (!(lang in names.nouns))
+  if (!(lang in names.nouns)) {
     return response.error('Invalid language');
+  }
 
   // Nicknames
   var adjectives  = names.adjectives[lang][feeling];
@@ -160,7 +162,7 @@ Parse.Cloud.define('getNicknames', function(request, response) {
  *
  * @response {Parse.Object} Shout object
  */
-Parse.Cloud.define('shout', function(request, response) {
+Parse.Cloud.define('createShout', function(request, response) {
   Parse.Cloud.useMasterKey();
 
   // Params
