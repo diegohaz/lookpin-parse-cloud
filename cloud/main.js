@@ -24,29 +24,79 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
     return response.error('Invalid feeling');
   }
 
-  // Info
-  if (user.isNew()) {
-    var info = new Parse.Object('UserInfo');
-
-    info.save().then(function(info) {
-      user.set('info', info);
-    })
-  }
-
   response.success();
 });
 
+/**
+ * After save user
+ */
+Parse.Cloud.afterSave(Parse.User, function(request) {
+  var user = request.object;
+
+  // Info
+  if (!user.get('info')) {
+    var info = new Parse.Object('UserInfo');
+
+    info.setACL(new Parse.ACL(user));
+    info.save().then(function(info) {
+      user.set('info', info);
+      user.save(null, {useMasterKey: true});
+    });
+  }
+});
+
+/**
+ * After delete user
+ */
+Parse.Cloud.afterDelete(Parse.User, function(request) {
+  Parse.Cloud.useMasterKey();
+
+  // User
+  var user = request.object;
+
+  // Delete user info
+  user.get('info') && user.get('info').destroy();
+
+  // Delete shouts
+  var shouts = new Parse.Query('Shout');
+  shouts.equalTo('user', user);
+
+  shouts.find().then(function(shouts) {
+    var shoutsToDestroy = [];
+
+    for (var i = 0; i < shouts.length; i++) {
+      shoutsToDestroy.push(shouts[i]);
+    }
+
+    if (shoutsToDestroy.length) {
+      Parse.Object.destroyAll(shoutsToDestroy);
+    }
+  });
+
+  // Delete comments
+  var comments = new Parse.Query('Comment');
+  comments.equalTo('user', user);
+
+  comments.find().then(function(comments) {
+    var commentsToDestroy = [];
+
+    for (var i = 0; i < comments.length; i++) {
+      commentsToDestroy.push(comments[i]);
+    }
+
+    if (commentsToDestroy.length) {
+      Parse.Object.destroyAll(commentsToDestroy);
+    }
+  });
+});
 
 /**
  * User info before save
  */
 Parse.Cloud.beforeSave('UserInfo', function(request, response) {
   var info  = request.object;
-  var user  = request.user;
 
   if (info.isNew()) {
-    info.setACL(new Parse.ACL(user));
-
     info.get('echoed')    || info.set('echoed', []);
     info.get('commented') || info.set('commented', []);
     info.get('removed')   || info.set('removed', []);
@@ -207,6 +257,20 @@ Parse.Cloud.afterSave('Comment', function(request) {
       info.addUnique('following', shout);
       info.remove('removed', shout);
       info.save(null, {useMasterKey: true});
+    });
+  }
+});
+
+/**
+ * After delete comment
+ */
+Parse.Cloud.afterDelete('Comment', function(request) {
+  var comment = request.object;
+
+  if (comment.get('shout')) {
+    comment.get('shout').fetch().then(function(shout) {
+      shout.increment('shouts', -1);
+      shout.save();
     });
   }
 });
