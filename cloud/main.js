@@ -1,5 +1,6 @@
 var _ = require('underscore');
 var names = require('cloud/names.js');
+var functions = require('cloud/functions.js');
 var validations = require('cloud/validations');
 
 /**
@@ -9,12 +10,13 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
   var nickname  = request.object.get('nickname');
   var feeling   = request.object.get('feeling');
 
+  // Invalid?
+  if (!request.object.isValid()) {
+    return response.error('Invalid object');
+  }
+
   // Defaults
   request.object.get('setup')     || request.object.set('setup', false);
-  request.object.get('echoed')    || request.object.set('echoed', []);
-  request.object.get('commented') || request.object.set('commented', []);
-  request.object.get('removed')   || request.object.set('removed', []);
-  request.object.get('following') || request.object.set('following', []);
   request.object.get('language')  || request.object.set('language', 'en');
 
   // Validate nickname
@@ -31,6 +33,38 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
 });
 
 /**
+ * User info before save
+ */
+Parse.Cloud.beforeSave('UserInfo', function(request, response) {
+  var info  = request.object;
+  var user  = request.user;
+
+  if (info.isNew()) {
+    info.setACL(new Parse.ACL(user));
+
+    info.get('echoed')    || info.set('echoed', []);
+    info.get('commented') || info.set('commented', []);
+    info.get('removed')   || info.set('removed', []);
+    info.get('following') || info.set('following', []);
+  }
+
+  response.success();
+});
+
+/**
+ * User info after save
+ */
+Parse.Cloud.afterSave('UserInfo', function(request) {
+  var info = request.object;
+  var user = request.user;
+
+  if (!info.existed()) {
+    user.set('info', info);
+    user.save();
+  }
+});
+
+/**
  * Delete shout references
  */
 Parse.Cloud.afterDelete('Shout', function(request) {
@@ -40,37 +74,37 @@ Parse.Cloud.afterDelete('Shout', function(request) {
   var shout = request.object;
 
   // Seek users which have references to shout
-  var wasEchoed = new Parse.Query('User');
+  var wasEchoed = new Parse.Query('UserInfo');
   wasEchoed.equalTo('echoed', shout);
 
-  var wasCommented = new Parse.Query('User');
+  var wasCommented = new Parse.Query('UserInfo');
   wasCommented.equalTo('commented', shout);
 
-  var wasRemoved = new Parse.Query('User');
+  var wasRemoved = new Parse.Query('UserInfo');
   wasRemoved.equalTo('removed', shout);
 
-  var wasFollowed = new Parse.Query('User');
+  var wasFollowed = new Parse.Query('UserInfo');
   wasFollowed.equalTo('following', shout);
 
   // Finally, query
   var query = Parse.Query.or(wasEchoed, wasCommented, wasRemoved, wasFollowed);
 
-  query.find().then(function(users) {
-    var usersToSave = [];
+  query.find().then(function(infos) {
+    var infosToSave = [];
 
-    for (var i = 0; i < users.length; i++) {
-      var user = users[i];
+    for (var i = 0; i < infos.length; i++) {
+      var info = infos[i];
 
-      user.remove('echoed', shout);
-      user.remove('commented', shout);
-      user.remove('removed', shout);
-      user.remove('following', shout);
+      info.remove('echoed', shout);
+      info.remove('commented', shout);
+      info.remove('removed', shout);
+      info.remove('following', shout);
 
-      usersToSave.push(user);
+      infosToSave.push(info);
     }
 
-    if (usersToSave.length) {
-      Parse.Object.saveAll(usersToSave);
+    if (infosToSave.length) {
+      Parse.Object.saveAll(infosToSave);
     }
   });
 
@@ -178,11 +212,11 @@ Parse.Cloud.define('shout', function(request, response) {
   if (!content)               return response.error('Empty content');
 
   // More validations
-  if (!validations.nickname(user.nickname)) {
+  if (!validations.nickname(user.get('nickname'))) {
     return response.error('Invalid nickname');
   }
 
-  if (!validations.feeling(user.feeling)) {
+  if (!validations.feeling(user.get('feeling'))) {
     return response.error('Invalid feeling');
   }
 
@@ -213,12 +247,12 @@ Parse.Cloud.define('shout', function(request, response) {
 
     return shout.save();
   }).then(function(shout) {
-    var place = user.get('place');
+    // var place = user.get('place');
 
-    place.increment('shouts');
-    place.save();
+    // place.increment('shouts');
+    // place.save();
 
-    response.success();
+    response.success(shout);
   }, response.error);
 });
 
@@ -231,10 +265,8 @@ Parse.Cloud.define('shout', function(request, response) {
  * @response {Parse.Object} Comment object
  */
 Parse.Cloud.define('comment', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
   // Params
-  var shoutId = request.params.should;
+  var shoutId = request.params.shoutId;
   var content = request.params.content;
   var user    = request.user;
 
@@ -246,7 +278,7 @@ Parse.Cloud.define('comment', function(request, response) {
   if (!content)               return response.error('Empty content');
 
   // More validations
-  if (!validations.nickname(user.nickname)) {
+  if (!validations.nickname(user.get('nickname'))) {
     return response.error('Invalid nickname');
   }
 
@@ -262,11 +294,9 @@ Parse.Cloud.define('comment', function(request, response) {
   user.get('place').fetch().then(function(place) {
     return shout.fetch();
   }).then(function(shout) {
-    var acl = new Parse.ACL();
+    var acl = new Parse.ACL(user);
 
     acl.setPublicReadAccess(true);
-    acl.setPublicWriteAccess(false);
-    acl.setWriteAccess(user, true);
 
     comment.setACL(acl);
     comment.set('shout', shout);
@@ -279,8 +309,18 @@ Parse.Cloud.define('comment', function(request, response) {
     return comment.save();
   }).then(function(comment) {
     shout.increment('comments');
-    shout.save();
 
+    return shout.save(null, {useMasterKey: true});
+  }).then(function() {
+    return functions.getUserInfo(user);
+  }).then(function(info) {
+    // Update user info
+    info.addUnique('commented', shout);
+    info.addUnique('following', shout);
+    info.remove('removed', shout);
+
+    return info.save();
+  }).then(function() {
     response.success(comment);
   }, response.error);
 });
@@ -293,8 +333,6 @@ Parse.Cloud.define('comment', function(request, response) {
  * @response {Parse.Object} Shout object
  */
 Parse.Cloud.define('echo', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
   // Params
   var shoutId = request.params.shoutId;
 
@@ -308,25 +346,31 @@ Parse.Cloud.define('echo', function(request, response) {
 
   // Echo
   shout.fetch().then(function(shout) {
-    // Verify if user already echoed the shout
-    var echoed = _.findWHere(user.get('echoed'), {id: shout.id});
+    return functions.getUserInfo(user);
+  }).then(function(info) {
+    // Verify is user already echoed the shout
+    var echoed = _.where(info.get('echoed'), {id: shout.id});
 
-    if (!echoed) {
-      shout.increment('echoes');
-      user.addUnique('echoed', shout);
-      user.addUnique('following', shout);
+    if (!echoed.length) {
+      // Info
+      info.addUnique('echoed', shout);
+      info.addUnique('following', shout);
+      info.remove('removed', shout);
+
+      // User
       user.set('feeling', shout.get('feeling'));
 
-      return Parse.Object.saveAll([shout, user]);
+      // Shout
+      shout.increment('echoes');
+      shout.save(null, {useMasterKey: true});
+
+      return Parse.Object.saveAll([user, info]);
     } else {
       return Parse.Promise.error('User cannot echo a shout twice');
     }
-  })
-  .then(function() {
+  }).then(function() {
     response.success(shout);
-  }, function(error) {
-    response.error(error.message);
-  });
+  }, response.error);
 });
 
 /**
@@ -337,8 +381,6 @@ Parse.Cloud.define('echo', function(request, response) {
  * @response {Parse.Object} Shout object
  */
 Parse.Cloud.define('unecho', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
   // Params
   var shoutId = request.params.shoutId;
 
@@ -352,24 +394,30 @@ Parse.Cloud.define('unecho', function(request, response) {
 
   // Unecho
   shout.fetch().then(function(shout) {
+    return functions.getUserInfo(user);
+  }).then(function(info) {
     // Verify if user already echoed the shout
-    var echoed = _.find(user.get('echoed'), {id: shout.id});
+    var echoed    = _.where(info.get('echoed'), {id: shout.id});
+    var commented = _.where(info.get('commented'), {id: shout.id});
 
-    if (echoed) {
+    if (echoed.length) {
       shout.increment('echoes', -1);
-      user.remove('echoed', shout);
-      user.remove('following', shout);
+      shout.save(null, {useMasterKey: true});
 
-      return Parse.Object.saveAll([shout, user]);
+      info.remove('echoed', shout);
+
+      // If user commented, there's still reason to keep following this shout
+      if (!commented.length) {
+        info.remove('following', shout);
+      }
+
+      return info.save();
     } else {
       return Parse.Promise.error('Cannot unecho a unechoed shout');
     }
-  })
-  .then(function() {
+  }).then(function() {
     response.success(shout);
-  }, function(error) {
-    response.error(error.message);
-  });
+  }, response.error);
 });
 
 /**
@@ -393,11 +441,13 @@ Parse.Cloud.define('follow', function(request, response) {
 
   // Follow
   shout.fetch().then(function(shout) {
-    user.addUnique('following', shout);
+    return functions.getUserInfo(user);
+  }).then(function(info) {
+    info.remove('removed', shout);
+    info.addUnique('following', shout);
 
-    return user.save();
-  })
-  .then(function() {
+    return info.save();
+  }).then(function() {
     response.success(shout);
   }, response.error);
 });
@@ -421,10 +471,12 @@ Parse.Cloud.define('unfollow', function(request, response) {
   var shout = new Parse.Object('Shout');
   shout.id = shoutId;
 
-  // Unfollow
-  user.remove('following', shout);
+  functions.getUserInfo(user).then(function(info) {
+    // Unfollow
+    info.remove('following', shout);
 
-  user.save().then(function() {
+    return info.save();
+  }).then(function() {
     response.success(shout);
   }, response.error);
 });
@@ -454,11 +506,14 @@ Parse.Cloud.define('remove', function(request, response) {
     if (shout.get('user').id == user.id) {
       return shout.destroy();
     } else {
-      user.addUnique('removed', shout);
-      return user.save();
+      return functions.getUserInfo(user).then(function(info) {
+        info.addUnique('removed', shout);
+        info.remove('following', shout);
+
+        return info.save();
+      });
     }
-  })
-  .then(function() {
+  }).then(function() {
     response.success(shout);
   }, response.error);
 });
@@ -482,10 +537,12 @@ Parse.Cloud.define('restore', function(request, response) {
   var shout = new Parse.Object('Shout');
   shout.id  = shoutId;
 
-  // Restore
-  user.remove('removed', shout);
+  functions.getUserInfo(user).then(function(info) {
+    // Restore
+    info.remove('removed', shout);
 
-  user.save().then(function() {
+    return info.save();
+  }).then(function() {
     response.success(shout);
   }, response.error);
 });
