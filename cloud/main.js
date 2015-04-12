@@ -6,17 +6,13 @@ var validations = require('cloud/validations');
  * Validate user and set defaults
  */
 Parse.Cloud.beforeSave(Parse.User, function(request, response) {
-  var nickname  = request.object.get('nickname');
-  var feeling   = request.object.get('feeling');
-
-  // Invalid?
-  if (!request.object.isValid()) {
-    return response.error('Invalid object');
-  }
+  var user      = request.object;
+  var nickname  = user.get('nickname');
+  var feeling   = user.get('feeling');
 
   // Defaults
-  request.object.get('setup')     || request.object.set('setup', false);
-  request.object.get('language')  || request.object.set('language', 'en');
+  user.get('setup')     || user.set('setup', false);
+  user.get('language')  || user.set('language', 'en');
 
   // Validate nickname
   if (nickname && !validations.nickname(nickname)) {
@@ -28,8 +24,18 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
     return response.error('Invalid feeling');
   }
 
+  // Info
+  if (user.isNew()) {
+    var info = new Parse.Object('UserInfo');
+
+    info.save().then(function(info) {
+      user.set('info', info);
+    })
+  }
+
   response.success();
 });
+
 
 /**
  * User info before save
@@ -48,19 +54,6 @@ Parse.Cloud.beforeSave('UserInfo', function(request, response) {
   }
 
   response.success();
-});
-
-/**
- * User info after save
- */
-Parse.Cloud.afterSave('UserInfo', function(request) {
-  var info = request.object;
-  var user = request.user;
-
-  if (!info.existed()) {
-    user.set('info', info);
-    user.save();
-  }
 });
 
 /**
@@ -206,8 +199,10 @@ Parse.Cloud.afterSave('Comment', function(request) {
     shout.increment('comments');
     shout.save(null, {useMasterKey: true});
 
-    functions.getUserInfo(user).then(function(info) {
+    user.fetch().then(function() {
       // Update user info
+      var info = user.get('info');
+
       info.addUnique('commented', shout);
       info.addUnique('following', shout);
       info.remove('removed', shout);
@@ -301,7 +296,7 @@ Parse.Cloud.define('echo', function(request, response) {
 
   // Echo
   shout.fetch().then(function(shout) {
-    return functions.getUserInfo(user);
+    return user.get('info').fetch();
   }).then(function(info) {
     // Verify is user already echoed the shout
     var echoed = _.where(info.get('echoed'), {id: shout.id});
@@ -349,7 +344,7 @@ Parse.Cloud.define('unecho', function(request, response) {
 
   // Unecho
   shout.fetch().then(function(shout) {
-    return functions.getUserInfo(user);
+    return user.get('info').fetch();
   }).then(function(info) {
     // Verify if user already echoed the shout
     var echoed    = _.where(info.get('echoed'), {id: shout.id});
@@ -396,7 +391,7 @@ Parse.Cloud.define('follow', function(request, response) {
 
   // Follow
   shout.fetch().then(function(shout) {
-    return functions.getUserInfo(user);
+    return user.get('info').fetch();
   }).then(function(info) {
     info.remove('removed', shout);
     info.addUnique('following', shout);
@@ -426,7 +421,7 @@ Parse.Cloud.define('unfollow', function(request, response) {
   var shout = new Parse.Object('Shout');
   shout.id = shoutId;
 
-  functions.getUserInfo(user).then(function(info) {
+  user.get('info').fetch().then(function(info) {
     // Unfollow
     info.remove('following', shout);
 
@@ -461,7 +456,7 @@ Parse.Cloud.define('remove', function(request, response) {
     if (shout.get('user').id == user.id) {
       return shout.destroy();
     } else {
-      return functions.getUserInfo(user).then(function(info) {
+      return user.get('info').fetch().then(function(info) {
         info.addUnique('removed', shout);
         info.remove('following', shout);
 
@@ -492,7 +487,7 @@ Parse.Cloud.define('restore', function(request, response) {
   var shout = new Parse.Object('Shout');
   shout.id  = shoutId;
 
-  functions.getUserInfo(user).then(function(info) {
+  user.get('info').fetch().then(function(info) {
     // Restore
     info.remove('removed', shout);
 
