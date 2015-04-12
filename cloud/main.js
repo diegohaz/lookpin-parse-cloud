@@ -267,12 +267,10 @@ Parse.Cloud.afterSave('Comment', function(request) {
 Parse.Cloud.afterDelete('Comment', function(request) {
   var comment = request.object;
 
-  if (comment.get('shout')) {
-    comment.get('shout').fetch().then(function(shout) {
-      shout.increment('shouts', -1);
-      shout.save();
-    });
-  }
+  comment.get('shout').fetch().then(function(shout) {
+    shout.increment('comments', -1);
+    shout.save(null, {useMasterKey: true});
+  });
 });
 
 /**
