@@ -65,6 +65,71 @@ Parse.Cloud.afterSave('UserInfo', function(request) {
 });
 
 /**
+ * Before save shout
+ */
+Parse.Cloud.beforeSave('Shout', function(request, response) {
+  // Params
+  var shout = request.object;
+  var user = shout.get('user') || request.user;
+
+  user.fetch().then(function() {
+    // Definitions
+    shout.get('user')       || shout.set('user', user);
+    shout.get('nickname')   || shout.set('nickname', user.get('nickname'));
+    shout.get('location')   || shout.set('location', user.get('location'));
+    shout.get('place')      || shout.set('place', user.get('place'));
+    shout.get('placeTemp')  || shout.set('placeTemp', user.get('placeTemp'));
+    shout.get('feeling')    || shout.set('feeling', user.get('feeling'));
+
+    // Place
+    var place = shout.get('place') || shout.get('placeTemp');
+
+    // Empty validations
+    if (!shout.get('user'))     return response.error('Empty user');
+    if (!shout.get('nickname')) return response.error('Empty nickname');
+    if (!shout.get('location')) return response.error('Empty location');
+    if (!shout.get('feeling'))  return response.error('Empty feeling');
+    if (!shout.get('content'))  return response.error('Empty content');
+    if (!place)                 return response.error('Empty place');
+
+    // More validations
+    if (!validations.nickname(user.get('nickname'))) {
+      return response.error('Invalid nickname');
+    }
+
+    if (!validations.feeling(user.get('feeling'))) {
+      return response.error('Invalid feeling');
+    }
+
+    if (shout.get('content').length > 255) {
+      return response.error('Content should not be larger than 255 characters');
+    }
+
+    if (shout.isNew()) {
+      var acl = new Parse.ACL(user);
+
+      acl.setPublicReadAccess(true);
+      shout.setACL(acl);
+    }
+
+    response.success();
+  }, response.error);
+});
+
+/**
+ * After save shout
+ */
+Parse.Cloud.afterSave('Shout', function(request) {
+  var shout = request.object;
+  var place = shout.get('place');
+
+  if (!shout.existed() && place) {
+    place.increment('shouts');
+    place.save(null, {useMasterKey: true});
+  }
+});
+
+/**
  * Delete shout references
  */
 Parse.Cloud.afterDelete('Shout', function(request) {
@@ -123,6 +188,16 @@ Parse.Cloud.afterDelete('Shout', function(request) {
       Parse.Object.destroyAll(commentsToDestroy);
     }
   });
+
+  // Decrement shouts in place
+  var place = shout.get('place');
+
+  if (place) {
+    place.fetch().then(function() {
+      place.increment('shouts', -1);
+      place.save();
+    });
+  }
 });
 
 /**
@@ -187,73 +262,6 @@ Parse.Cloud.define('getNicknames', function(request, response) {
   }
 
   response.success(nicknames);
-});
-
-/**
- * Create a shout
- *
- * @param {string} content
- *
- * @response {Parse.Object} Shout object
- */
-Parse.Cloud.define('shout', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
-  // Params
-  var content = request.params.content;
-  var user = request.user;
-
-  // Empty validations
-  if (!user)                  return response.error('Empty user');
-  if (!user.get('nickname'))  return response.error('Empty nickname');
-  if (!user.get('location'))  return response.error('Empty location');
-  if (!user.get('place'))     return response.error('Empty place');
-  if (!user.get('feeling'))   return response.error('Empty feeling');
-  if (!content)               return response.error('Empty content');
-
-  // More validations
-  if (!validations.nickname(user.get('nickname'))) {
-    return response.error('Invalid nickname');
-  }
-
-  if (!validations.feeling(user.get('feeling'))) {
-    return response.error('Invalid feeling');
-  }
-
-  if (content.length > 255) {
-    return response.error('Content should not be larger than 255 characters');
-  }
-
-  // Object
-  var shout = new Parse.Object('Shout');
-
-  // Fetch place
-  user.get('place').fetch().then(function(place) {
-    var acl = new Parse.ACL();
-
-    acl.setPublicReadAccess(true);
-    acl.setPublicWriteAccess(false);
-    acl.setWriteAccess(user, true);
-
-    shout.setACL(acl);
-    shout.set('user', user);
-    shout.set('nickname', user.get('nickname'));
-    shout.set('location', user.get('location'));
-    shout.set('place', user.get('place'));
-    shout.set('feeling', user.get('feeling'));
-    shout.set('content', content);
-    shout.set('echoes', 0);
-    shout.set('comments', 0);
-
-    return shout.save();
-  }).then(function(shout) {
-    // var place = user.get('place');
-
-    // place.increment('shouts');
-    // place.save();
-
-    response.success(shout);
-  }, response.error);
 });
 
 /**
