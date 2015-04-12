@@ -2,7 +2,7 @@ var names = require('cloud/names.js');
 
 // Validate nickname
 exports.nickname = function(nickname) {
-  if (nickname.indexOf(' ') > 0 && nickname.length <= 48) {
+  if (nickname.length <= 48) {
     return true;
   } else {
     return false;
