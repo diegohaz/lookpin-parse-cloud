@@ -11,7 +11,7 @@ exports.nickname = function(nickname) {
 
 // Validate feeling
 exports.feeling = function(feeling) {
-  var feelings = Object.keys(names.adjectives);
+  var feelings = Object.keys(names.adjectives['en']);
 
   if (~feelings.indexOf(feeling)) {
     return true;
