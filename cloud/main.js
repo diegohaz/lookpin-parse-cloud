@@ -34,7 +34,7 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
 });
 
 /**
- * After save user
+ * Create user info object after save new user
  */
 Parse.Cloud.afterSave(Parse.User, function(request) {
   var user = request.object;
@@ -52,7 +52,7 @@ Parse.Cloud.afterSave(Parse.User, function(request) {
 });
 
 /**
- * After delete user
+ * Delete shouts and comments from user after delete him
  */
 Parse.Cloud.afterDelete(Parse.User, function(request) {
   Parse.Cloud.useMasterKey();
@@ -97,7 +97,7 @@ Parse.Cloud.afterDelete(Parse.User, function(request) {
 });
 
 /**
- * User info before save
+ * Set defaults for UserInfo before save a new object
  */
 Parse.Cloud.beforeSave('UserInfo', function(request, response) {
   var info  = request.object;
@@ -113,7 +113,9 @@ Parse.Cloud.beforeSave('UserInfo', function(request, response) {
 });
 
 /**
- * Before save shout
+ * Validate and set defaults to shout before save
+ *
+ * @param {String} content
  */
 Parse.Cloud.beforeSave('Shout', function(request, response) {
   // Params
@@ -135,7 +137,7 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
 });
 
 /**
- * After save shout
+ * Increment place shouts after save a shout
  */
 Parse.Cloud.afterSave('Shout', function(request) {
   var shout = request.object;
@@ -220,6 +222,9 @@ Parse.Cloud.afterDelete('Shout', function(request) {
 
 /**
  * Comment a shout
+ *
+ * @param {Parse.Object} shout
+ * @param {String} content
  */
 Parse.Cloud.beforeSave('Comment', function(request, response) {
   // Params
@@ -244,7 +249,8 @@ Parse.Cloud.beforeSave('Comment', function(request, response) {
 });
 
 /**
- * After comment a shout
+ * If comment is new, increment shout's comments and add shout to the commented
+ * and following lists of user's info
  */
 Parse.Cloud.afterSave('Comment', function(request) {
   var comment = request.object;
@@ -268,7 +274,8 @@ Parse.Cloud.afterSave('Comment', function(request) {
 });
 
 /**
- * After delete comment
+ * Decrement comments in shout and adjust commented list in user's info after
+ * delete a comment
  */
 Parse.Cloud.afterDelete('Comment', function(request) {
   Parse.Cloud.useMasterKey();
@@ -303,6 +310,9 @@ Parse.Cloud.afterDelete('Comment', function(request) {
 
 /**
  * Before save place
+ *
+ * @param {Parse.Object} parent
+ * @param {String} name
  */
 Parse.Cloud.beforeSave('Place', function(request, response) {
   var place = request.object;
@@ -312,7 +322,7 @@ Parse.Cloud.beforeSave('Place', function(request, response) {
   if (!place.get('name')) return response.error('Empty name');
 
   // ACL
-  if (keyword.isNew()) {
+  if (place.isNew()) {
     var acl = new Parse.ACL();
 
     acl.setPublicReadAccess(true);
@@ -335,7 +345,7 @@ Parse.Cloud.beforeSave('Place', function(request, response) {
 });
 
 /**
- * After save place
+ * Create a place keyword after save a new place
  */
 Parse.Cloud.afterSave('Place', function(request) {
   var place = request.object;
@@ -350,6 +360,8 @@ Parse.Cloud.afterSave('Place', function(request) {
 
 /**
  * Before save place keyword
+ *
+ * @param {Parse.Object} [place|placeTemp]
  */
 Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
   var keyword = request.object;
