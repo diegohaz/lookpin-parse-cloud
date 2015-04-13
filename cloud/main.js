@@ -1,14 +1,12 @@
 var _ = require('underscore');
 var names = require('cloud/names.js');
-var validations = require('cloud/validations');
-
+var validate = require('cloud/validate');
 var urlify = require('cloud/urlify').create({
   spaces: ' ',
   toLower: true,
   nonPrintable: '',
   trim: true
 });
-
 
 /**
  * Validate user and set defaults
@@ -23,12 +21,12 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
   user.get('language')  || user.set('language', 'en');
 
   // Validate nickname
-  if (nickname && !validations.nickname(nickname)) {
+  if (nickname && !validate.nickname(nickname)) {
     return response.error('Invalid nickname');
   }
 
   // Validate feeling
-  if (feeling && !validations.feeling(feeling)) {
+  if (feeling && !validate.feeling(feeling)) {
     return response.error('Invalid feeling');
   }
 
@@ -123,7 +121,7 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
   var user = shout.get('user') || request.user;
 
   user.fetch().then(function() {
-    if (validations.post(shout, user, response)) {
+    if (validate.post(shout, user, response)) {
       if (shout.isNew()) {
         var acl = new Parse.ACL(user);
 
@@ -232,7 +230,7 @@ Parse.Cloud.beforeSave('Comment', function(request, response) {
   user.fetch().then(function() {
     return shout.fetch();
   }).then(function() {
-    if (validations.post(comment, user, response)) {
+    if (validate.post(comment, user, response)) {
       if (comment.isNew()) {
         var acl = new Parse.ACL(user);
 
@@ -414,7 +412,7 @@ Parse.Cloud.define('getNicknames', function(request, response) {
   var limit   = request.params.limit    || 1;
 
   // Validations
-  if (!validations.feeling(feeling)) {
+  if (!validate.feeling(feeling)) {
     return response.error('Invalid feeling');
   }
 
