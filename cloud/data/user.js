@@ -92,7 +92,7 @@ Parse.Cloud.afterDelete(Parse.User, function(request) {
  * Set defaults for UserInfo before save a new object
  */
 Parse.Cloud.beforeSave('UserInfo', function(request, response) {
-  var info  = request.object;
+  var info = request.object;
 
   if (info.isNew()) {
     info.get('echoed')    || info.set('echoed', []);

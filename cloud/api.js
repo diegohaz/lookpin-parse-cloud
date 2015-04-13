@@ -182,8 +182,8 @@ Parse.Cloud.define('follow', function(request, response) {
 
   // Follow
   shout.fetch().then(function(shout) {
-    return user.get('info').fetch();
-  }).then(function(info) {
+    var info = user.get('info');
+
     info.remove('removed', shout);
     info.addUnique('following', shout);
 
@@ -210,14 +210,12 @@ Parse.Cloud.define('unfollow', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
-  shout.id = shoutId;
+  var info  = user.get('info');
+  shout.id  = shoutId;
 
-  user.get('info').fetch().then(function(info) {
-    // Unfollow
-    info.remove('following', shout);
+  info.remove('following', shout);
 
-    return info.save();
-  }).then(function() {
+  info.save().then(function() {
     response.success(shout);
   }, response.error);
 });
@@ -247,12 +245,12 @@ Parse.Cloud.define('remove', function(request, response) {
     if (shout.get('user').id == user.id) {
       return shout.destroy();
     } else {
-      return user.get('info').fetch().then(function(info) {
-        info.addUnique('removed', shout);
-        info.remove('following', shout);
+      var info = user.get('info');
 
-        return info.save();
-      });
+      info.addUnique('removed', shout);
+      info.remove('following', shout);
+
+      return info.save();
     }
   }).then(function() {
     response.success(shout);
@@ -276,14 +274,13 @@ Parse.Cloud.define('restore', function(request, response) {
 
   // Object
   var shout = new Parse.Object('Shout');
+  var info  = user.get('info');
   shout.id  = shoutId;
 
-  user.get('info').fetch().then(function(info) {
-    // Restore
-    info.remove('removed', shout);
+  // Restore
+  info.remove('removed', shout);
 
-    return info.save();
-  }).then(function() {
+  info.save().then(function() {
     response.success(shout);
   }, response.error);
 });

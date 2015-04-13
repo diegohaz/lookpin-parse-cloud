@@ -81,8 +81,8 @@ Parse.Cloud.afterDelete('Comment', function(request) {
       return Parse.Promise.error();
     }
   }).then(function(user) {
-    return user.get('info').fetch();
-  }).then(function(info) {
+    var info = user.get('info');
+
     info.remove('commented', shout);
     info.save();
   });
