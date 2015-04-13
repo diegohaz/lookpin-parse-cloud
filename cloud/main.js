@@ -273,11 +273,33 @@ Parse.Cloud.afterSave('Comment', function(request) {
  * After delete comment
  */
 Parse.Cloud.afterDelete('Comment', function(request) {
-  var comment = request.object;
+  Parse.Cloud.useMasterKey();
 
-  comment.get('shout').fetch().then(function(shout) {
+  var comment = request.object;
+  var shout   = comment.get('shout');
+  var user    = comment.get('user');
+
+  // Decrement comments in shout
+  shout.fetch().then(function(shout) {
     shout.increment('comments', -1);
-    shout.save(null, {useMasterKey: true});
+    shout.save();
+  });
+
+  // Remove commented shout from user info if it remains no comment in shout
+  var comments = new Parse.Query('Comment');
+
+  comments.equalTo('user', user);
+  comments.first().then(function(result) {
+    if (!result) {
+      return user.fetch();
+    } else {
+      return Parse.Promise.error();
+    }
+  }).then(function(user) {
+    return user.get('info').fetch();
+  }).then(function(info) {
+    info.remove('commented', shout);
+    info.save();
   });
 });
 
