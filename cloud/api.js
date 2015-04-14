@@ -284,3 +284,73 @@ Parse.Cloud.define('restore', function(request, response) {
     response.success(shout);
   }, response.error);
 });
+
+/**
+ * Propose a new place
+ *
+ * @param {string} placeName
+ * @param {string} parentId
+ * @param {Parse.GeoPoint} [location]
+ *
+ * @response {Parse.Object} Place object
+ */
+Parse.Cloud.define('proposePlace', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var placeName = request.params.placeName;
+  var parentId  = request.params.parentId;
+  var location  = request.params.location || request.user.get('location');
+
+  // Place
+  var place   = new Parse.Object('PlaceTemp');
+  var parent  = new Parse.Object('Place');
+  parent.id = parentId;
+
+  place.set('name', placeName.charAt(0).toUpperCase() + placeName.slice(1));
+  place.set('parent', parent);
+  place.set('location', location);
+  place.add('locations', location);
+  place.increment('entries');
+
+  place.save().then(response.success, response.error);
+});
+
+/**
+ * Endorse a proposed place
+ *
+ * @param {string} placeId
+ * @param {Parse.GeoPoint} [location]
+ *
+ * @response {Parse.Object} Place object
+ */
+Parse.Cloud.define('endorsePlace', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var placeId  = request.params.placeId;
+  var location = request.params.location || request.user.get('location');
+
+  // Place
+  var place = new Parse.Object('PlaceTemp');
+  place.id  = placeId;
+
+  place.fetch().then(function() {
+    place.increment('entries');
+    place.add('location', location);
+
+    // Set location by average
+    var locations = place.get('locations');
+    var lats  = _.map(locations, function(point) { return point.latitude });
+    var longs = _.map(locations, function(point) { return point.longitude });
+    var sum   = function(memo, num) { return memo + num };
+    location  = new Parse.GeoPoint();
+
+    location.latitude  = _.reduce(lats, sum) / lats.length;
+    location.longitude = _.reduce(longs, sum) / longs.length;
+
+    place.set('location', location);
+
+    return place.save();
+  }).then(response.success, response.error);
+});
