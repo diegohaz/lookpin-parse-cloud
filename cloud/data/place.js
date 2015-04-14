@@ -1,3 +1,4 @@
+var _ = require('underscore');
 var urlify = require('cloud/modules/urlify.js').create({
   spaces: ' ',
   toLower: true,
@@ -32,7 +33,6 @@ Parse.Cloud.beforeSave('Place', function(request, response) {
   if (parent && !place.get('depth')) {
     return parent.fetch().then(function() {
       place.set('depth', parent.get('depth') + 1);
-
       response.success();
     }, response.success);
   } else {
@@ -50,6 +50,55 @@ Parse.Cloud.afterSave('Place', function(request) {
   if (!place.existed()) {
     var keyword = new Parse.Object('PlaceKeyword');
     keyword.set('place', place);
+    keyword.set('keyword', place.get('name'));
+    keyword.save(null, {useMasterKey: true});
+  }
+});
+
+/**
+ * Before save PlaceTemp
+ *
+ * @param {String} name
+ * @param {Parse.Object} parent
+ * @param {Parse.GeoPoint} location
+ */
+Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
+  var place     = request.object;
+  var parent    = place.get('parent');
+  var location  = place.get('location');
+
+  // Empty validations
+  if (!place.get('name')) return response.error('Empty name');
+  if (!parent)            return response.error('Empty parent');
+  if (!location)          return response.error('Empty location');
+
+  // ACL
+  var acl = new Parse.ACL();
+  acl.setPublicWriteAccess(false);
+  acl.setPublicReadAccess(true);
+  place.setACL(acl);
+
+  // Depth
+  if (!place.get('depth')) {
+    parent.fetch().then(function(parent) {
+      place.set('depth', parent.get('depth') + 1);
+
+      response.success();
+    }, response.error);
+  } else {
+    response.success();
+  }
+});
+
+/**
+ * Create a place keyword after save a new place temp
+ */
+Parse.Cloud.afterSave('PlaceTemp', function(request) {
+  var place = request.object;
+
+  if (!place.existed()) {
+    var keyword = new Parse.Object('PlaceKeyword');
+    keyword.set('placeTemp', place);
     keyword.set('keyword', place.get('name'));
     keyword.save(null, {useMasterKey: true});
   }
