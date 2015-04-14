@@ -337,7 +337,7 @@ Parse.Cloud.define('endorsePlace', function(request, response) {
 
   place.fetch().then(function() {
     place.increment('entries');
-    place.add('location', location);
+    place.add('locations', location);
 
     // Set location by average
     var locations = place.get('locations');
