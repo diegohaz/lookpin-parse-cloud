@@ -58,56 +58,7 @@ Parse.Cloud.afterSave('Place', function(request) {
 /**
  * Before delete place
  */
-Parse.Cloud.beforeDelete('Place', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
-  var place = request.object;
-
-  // Delete keywords
-  var keywords = new Parse.Query('PlaceKeyword');
-
-  keywords.equalTo('place', place);
-  keywords.find().then(function(results) {
-    var keywordsToDelete = [];
-
-    for (var i = 0; i < results.length; i++) {
-      keywordsToDelete.push(results[i]);
-    }
-
-    if (keywordsToDelete.length) {
-      Parse.Object.destroyAll(keywordsToDelete);
-    }
-  });
-
-  // Try to set objects place to place's parent
-  place.get('parent').fetch().then(function(parent) {
-    var performSave = function(object) {
-      var objects = new Parse.Query(object);
-
-      objects.equalTo('place', place);
-      objects.find().then(function(results) {
-        var objectsToSave = [];
-
-        for (var i = 0; i < results.length; i++) {
-          results[i].set('place', parent);
-          objectsToSave.push(results[i]);
-        }
-
-        if (objectsToSave.length) {
-          Parse.Object.saveAll(objectsToSave);
-        }
-      });
-    };
-
-    performSave(Parse.User);
-    performSave('Shout');
-    performSave('Comment');
-    performSave('Place');
-    performSave('PlaceTemp');
-
-    response.success();
-  });
-});
+Parse.Cloud.beforeDelete('Place', clearPlace);
 
 /**
  * Before save PlaceTemp
@@ -157,6 +108,11 @@ Parse.Cloud.afterSave('PlaceTemp', function(request) {
     keyword.save(null, {useMasterKey: true});
   }
 });
+
+/**
+ * Before delete proposed place
+ */
+Parse.Cloud.beforeDelete('PlaceTemp', clearPlace);
 
 /**
  * Before save place keyword
@@ -259,3 +215,65 @@ Parse.Cloud.define('endorsePlace', function(request, response) {
     return place.save();
   }).then(response.success, response.error);
 });
+
+/**
+ * Clear place
+ */
+function clearPlace(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  var place  = request.object;
+  var object = place.className;
+  var column = object.charAt(0).toLowerCase() + object.slice(1);
+
+  // Delete keywords
+  var keywords = new Parse.Query('PlaceKeyword');
+
+  keywords.equalTo(column, place);
+  keywords.find().then(function(results) {
+    var keywordsToDelete = [];
+
+    for (var i = 0; i < results.length; i++) {
+      keywordsToDelete.push(results[i]);
+    }
+
+    if (keywordsToDelete.length) {
+      Parse.Object.destroyAll(keywordsToDelete);
+    }
+  });
+
+  // Try to set objects place to place's parent
+  place.get('parent').fetch().then(function(parent) {
+    var promises = [];
+    var performSave = function(object) {
+      var objects = new Parse.Query(object);
+
+      objects.equalTo(column, place);
+      return objects.find().then(function(results) {
+        var objectsToSave = [];
+
+        for (var i = 0; i < results.length; i++) {
+          if (column == 'placeTemp') {
+            results[i].set('placeTemp', undefined);
+          }
+          results[i].set('place', parent);
+          objectsToSave.push(results[i]);
+        }
+
+        if (objectsToSave.length) {
+          return Parse.Object.saveAll(objectsToSave);
+        } else {
+          return Parse.Promise.as();
+        }
+      });
+    };
+
+    promises.push(performSave(Parse.User));
+    promises.push(performSave('Shout'));
+    promises.push(performSave('Comment'));
+    promises.push(performSave('Place'));
+    promises.push(performSave('PlaceTemp'));
+
+    Parse.Promise.when(promises).then(response.success, response.error);
+  });
+}
