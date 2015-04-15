@@ -253,9 +253,7 @@ function clearPlace(request, response) {
         var objectsToSave = [];
 
         for (var i = 0; i < results.length; i++) {
-          if (column == 'placeTemp') {
-            results[i].set('placeTemp', undefined);
-          }
+          results[i].unset('placeTemp');
           results[i].set('place', parent);
           objectsToSave.push(results[i]);
         }

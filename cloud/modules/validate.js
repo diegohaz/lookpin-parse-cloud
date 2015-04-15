@@ -26,8 +26,11 @@ exports.post = function(post, user, response) {
   post.get('nickname')   || post.set('nickname', user.get('nickname'));
   post.get('location')   || post.set('location', user.get('location'));
   post.get('place')      || post.set('place', user.get('place'));
-  post.get('placeTemp')  || post.set('placeTemp', user.get('placeTemp'));
   post.get('feeling')    || post.set('feeling', user.get('feeling'));
+
+  if (!post.get('placeTemp') && user.get('placeTemp')) {
+    post.set('placeTemp', user.get('placeTemp'));
+  }
 
   // Place
   var place = post.get('place') || post.get('placeTemp');
