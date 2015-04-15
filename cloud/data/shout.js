@@ -30,7 +30,7 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
  */
 Parse.Cloud.afterSave('Shout', function(request) {
   var shout = request.object;
-  var place = shout.get('place');
+  var place = shout.get('place') || shout.get('placeTemp');
 
   if (!shout.existed() && place) {
     place.increment('shouts');
