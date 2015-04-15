@@ -1,3 +1,4 @@
+var _ = require('underscore');
 var validate = require('cloud/modules/validate.js');
 
 /**
@@ -106,4 +107,223 @@ Parse.Cloud.afterDelete('Shout', function(request) {
       place.save();
     });
   }
+});
+
+/**
+ * Echo a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('echo', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id  = shoutId;
+
+  // Echo
+  shout.fetch().then(function(shout) {
+    return user.get('info').fetch();
+  }).then(function(info) {
+    // Verify is user already echoed the shout
+    var echoed = _.where(info.get('echoed'), {id: shout.id});
+
+    if (!echoed.length) {
+      // Info
+      info.addUnique('echoed', shout);
+      info.addUnique('following', shout);
+      info.remove('removed', shout);
+
+      // User
+      user.set('feeling', shout.get('feeling'));
+
+      // Shout
+      shout.increment('echoes');
+      shout.save(null, {useMasterKey: true});
+
+      return Parse.Object.saveAll([user, info]);
+    } else {
+      return Parse.Promise.error('User cannot echo a shout twice');
+    }
+  }).then(function() {
+    response.success(shout);
+  }, response.error);
+});
+
+/**
+ * Unecho a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('unecho', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id  = shoutId;
+
+  // Unecho
+  shout.fetch().then(function(shout) {
+    return user.get('info').fetch();
+  }).then(function(info) {
+    // Verify if user already echoed the shout
+    var echoed    = _.where(info.get('echoed'), {id: shout.id});
+    var commented = _.where(info.get('commented'), {id: shout.id});
+
+    if (echoed.length) {
+      shout.increment('echoes', -1);
+      shout.save(null, {useMasterKey: true});
+
+      info.remove('echoed', shout);
+
+      // If user commented, there's still reason to keep following this shout
+      if (!commented.length) {
+        info.remove('following', shout);
+      }
+
+      return info.save();
+    } else {
+      return Parse.Promise.error('Cannot unecho a unechoed shout');
+    }
+  }).then(function() {
+    response.success(shout);
+  }, response.error);
+});
+
+/**
+ * Follow a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('follow', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id  = shoutId;
+
+  // Follow
+  shout.fetch().then(function(shout) {
+    var info = user.get('info');
+
+    info.remove('removed', shout);
+    info.addUnique('following', shout);
+
+    return info.save();
+  }).then(function() {
+    response.success(shout);
+  }, response.error);
+});
+
+/**
+ * Unfollow a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('unfollow', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  var info  = user.get('info');
+  shout.id  = shoutId;
+
+  info.remove('following', shout);
+
+  info.save().then(function() {
+    response.success(shout);
+  }, response.error);
+});
+
+/**
+ * Remove a shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('remove', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  shout.id  = shoutId;
+
+  // Remove
+  shout.fetch().then(function(shout) {
+    // User is removing his own shout
+    if (shout.get('user').id == user.id) {
+      return shout.destroy();
+    } else {
+      var info = user.get('info');
+
+      info.addUnique('removed', shout);
+      info.remove('following', shout);
+
+      return info.save();
+    }
+  }).then(function() {
+    response.success(shout);
+  }, response.error);
+});
+
+/**
+ * Restore a removed shout
+ *
+ * @param {string} shoutId
+ *
+ * @response {Parse.Object} Shout object
+ */
+Parse.Cloud.define('restore', function(request, response) {
+  // Params
+  var shoutId = request.params.shoutId;
+
+  // User
+  var user = request.user;
+  if (!user) return response.error('User is not defined');
+
+  // Object
+  var shout = new Parse.Object('Shout');
+  var info  = user.get('info');
+  shout.id  = shoutId;
+
+  // Restore
+  info.remove('removed', shout);
+
+  info.save().then(function() {
+    response.success(shout);
+  }, response.error);
 });

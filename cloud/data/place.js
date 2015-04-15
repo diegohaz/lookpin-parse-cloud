@@ -56,6 +56,60 @@ Parse.Cloud.afterSave('Place', function(request) {
 });
 
 /**
+ * Before delete place
+ */
+Parse.Cloud.beforeDelete('Place', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  var place = request.object;
+
+  // Delete keywords
+  var keywords = new Parse.Query('PlaceKeyword');
+
+  keywords.equalTo('place', place);
+  keywords.find().then(function(results) {
+    var keywordsToDelete = [];
+
+    for (var i = 0; i < results.length; i++) {
+      keywordsToDelete.push(results[i]);
+    }
+
+    if (keywordsToDelete.length) {
+      Parse.Object.destroyAll(keywordsToDelete);
+    }
+  });
+
+  // Try to set objects place to place's parent
+  place.get('parent').fetch().then(function(parent) {
+    var performSave = function(object) {
+      var objects = new Parse.Query(object);
+
+      objects.equalTo('place', place);
+      objects.find().then(function(results) {
+        var objectsToSave = [];
+
+        for (var i = 0; i < results.length; i++) {
+          results[i].set('place', parent);
+          objectsToSave.push(results[i]);
+        }
+
+        if (objectsToSave.length) {
+          Parse.Object.saveAll(objectsToSave);
+        }
+      });
+    };
+
+    performSave(Parse.User);
+    performSave('Shout');
+    performSave('Comment');
+    performSave('Place');
+    performSave('PlaceTemp');
+
+    response.success();
+  });
+});
+
+/**
  * Before save PlaceTemp
  *
  * @param {String} name
@@ -134,4 +188,74 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
     keyword.set('keyword', urlify(keyword.get('keyword')));
     response.success();
   }
+});
+
+/**
+ * Propose a new place
+ *
+ * @param {string} placeName
+ * @param {string} parentId
+ * @param {Parse.GeoPoint} [location]
+ *
+ * @response {Parse.Object} Place object
+ */
+Parse.Cloud.define('proposePlace', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var placeName = request.params.placeName;
+  var parentId  = request.params.parentId;
+  var location  = request.params.location || request.user.get('location');
+
+  // Place
+  var place   = new Parse.Object('PlaceTemp');
+  var parent  = new Parse.Object('Place');
+  parent.id = parentId;
+
+  place.set('name', placeName.charAt(0).toUpperCase() + placeName.slice(1));
+  place.set('parent', parent);
+  place.set('location', location);
+  place.add('locations', location);
+  place.increment('entries');
+
+  place.save().then(response.success, response.error);
+});
+
+/**
+ * Endorse a proposed place
+ *
+ * @param {string} placeId
+ * @param {Parse.GeoPoint} [location]
+ *
+ * @response {Parse.Object} Place object
+ */
+Parse.Cloud.define('endorsePlace', function(request, response) {
+  Parse.Cloud.useMasterKey();
+
+  // Params
+  var placeId  = request.params.placeId;
+  var location = request.params.location || request.user.get('location');
+
+  // Place
+  var place = new Parse.Object('PlaceTemp');
+  place.id  = placeId;
+
+  place.fetch().then(function() {
+    place.increment('entries');
+    place.add('locations', location);
+
+    // Set location by average
+    var locations = place.get('locations');
+    var lats  = _.map(locations, function(point) { return point.latitude });
+    var longs = _.map(locations, function(point) { return point.longitude });
+    var sum   = function(memo, num) { return memo + num };
+    location  = new Parse.GeoPoint();
+
+    location.latitude  = _.reduce(lats, sum) / lats.length;
+    location.longitude = _.reduce(longs, sum) / longs.length;
+
+    place.set('location', location);
+
+    return place.save();
+  }).then(response.success, response.error);
 });
