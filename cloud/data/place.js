@@ -147,6 +147,70 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
 });
 
 /**
+ * Get places
+ *
+ * @param {Parse.GeoPoint} byDistance
+ * @param {bool} [byRelevance=false]
+ * @param {string} [byName=false]
+ * @param {bool} [includeTemp=false]
+ *
+ * @response {Parse.Object[]} List of place objects
+ */
+Parse.Cloud.define('getPlaces', function(request, response) {
+  // Params
+  var user      = request.user;
+  var distance  = request.params.byDistance;
+  var relevance = request.params.byRelevance;
+  var name      = request.params.byName;
+  var temp      = request.params.includeTemp;
+
+  // Query
+  var places = new Parse.Query('Place');
+
+  // By distance
+  if (distance) {
+    places.near('location', distance);
+  }
+
+  // By relevance
+  if (relevance) {
+    places.descending('shouts');
+  }
+
+  // By name
+  if (name) {
+    var keywords = new Parse.Query('PlaceKeyword');
+
+    name = urlify(name);
+
+    keywords.contains('keyword', name);
+    keywords.include('place');
+    keywords.matchesQuery('place', places);
+
+    if (temp) {
+      var tempKeywords = new Parse.Query('PlaceKeyword');
+      tempKeywords.include('placeTemp');
+      tempKeywords.matchesQuery('placeTemp', places);
+
+      keywords = Parse.Query.or(keywords, tempKeywords);
+    }
+
+    keywords.find().then(function(keywords) {
+      placesToReturn = [];
+
+      for (var i = 0; i < keywords.length; i++) {
+        var place = keywords[i].get('place') || keywords[i].get('placeTemp');
+        placesToReturn.push(place);
+      }
+
+      response.success(placesToReturn);
+    }, response.error);
+  } else {
+    places.find().then(response.success, response.error);
+  }
+});
+
+/**
  * Propose a new place
  *
  * @param {string} placeName
