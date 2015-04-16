@@ -83,6 +83,14 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
   acl.setPublicReadAccess(true);
   place.setACL(acl);
 
+  // Map
+  if (!place.get('map')) {
+    var lat = location.latitude;
+    var lng = location.longitude;
+    var map = 'https://www.google.com.br/maps/@' + lat + ',' + lng + ',18z';
+    place.set('map', map);
+  }
+
   // Depth
   if (!place.get('depth')) {
     parent.fetch().then(function(parent) {
