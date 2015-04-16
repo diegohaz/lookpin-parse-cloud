@@ -120,7 +120,8 @@ Parse.Cloud.afterDelete('Shout', function(request) {
  */
 Parse.Cloud.define('getShouts', function(request, response) {
   // Params
-  var location = request.params.location || request.user.get('location');
+  var user     = request.user;
+  var location = request.params.location || user.get('location');
   var limit    = request.params.limit    || 30;
   var page     = request.params.page     || 0;
 
@@ -131,6 +132,13 @@ Parse.Cloud.define('getShouts', function(request, response) {
   var now    = Date.now();
 
   shouts.near('location', location);
+  // Include 4 levels of places depth
+  shouts.include([
+    'place', 'placeTemp',
+    'place.parent', 'placeTemp.parent',
+    'place.parent.parent', 'placeTemp.parent.parent',
+    'place.parent.parent.parent', 'placeTemp.parent.parent.parent'
+  ]);
   shouts.limit(limit);
   shouts.skip(limit * page);
 
@@ -139,11 +147,40 @@ Parse.Cloud.define('getShouts', function(request, response) {
 
     for (var i = 0; i < shouts.length; i++) {
       var shout   = shouts[i];
+      var place   = shout.get('place') || shout.get('placeTemp');
+      var depth   = place.get('depth');
+      var parent  = place.get('parent');
+
+      // Rank
       var echoes  = shout.get('echoes') || 0;
       var minutes = (now - shout.createdAt.getTime()) / 60000;
       var meters  = location.kilometersTo(shout.get('location')) * 1000;
+      ranks[i]    = meters + minutes/20 - echoes;
 
-      ranks[i] = meters + minutes/20 - echoes;
+      // Place
+      // TODO: DRY
+      if (meters > 100000) {
+        // City depth level
+        while (depth > 1) {
+          depth = parent.get('depth');
+          shout.attributes.place = parent;
+          parent = parent.get('parent');
+        }
+      } else if (meters > 500) {
+        // Place depth level
+        while (depth > 2) {
+          depth = parent.get('depth');
+          shout.attributes.place = parent;
+          parent = parent.get('parent');
+        }
+      } else if (meters > 100) {
+        // Inner place depth level
+        while (depth > 3) {
+          depth = parent.get('depth');
+          shout.attributes.place = parent;
+          parent = parent.get('parent');
+        }
+      }
     }
 
     if (shouts.length) {
