@@ -9,7 +9,7 @@ var validate = require('cloud/modules/validate.js');
 Parse.Cloud.beforeSave('Shout', function(request, response) {
   // Params
   var shout = request.object;
-  var user = shout.get('user') || request.user;
+  var user  = shout.get('user') || request.user;
 
   user.fetch().then(function() {
     if (validate.post(shout, user, response)) {
@@ -107,6 +107,53 @@ Parse.Cloud.afterDelete('Shout', function(request) {
       place.save();
     });
   }
+});
+
+/**
+ * Get shouts
+ *
+ * @param {Parse.GeoPoint} [location]
+ * @param {int} [limit=30]
+ * @param {int} [page=0]
+ *
+ * @response {Parse.Object[]} List of shout objects
+ */
+Parse.Cloud.define('getShouts', function(request, response) {
+  // Params
+  var location = request.params.location || request.user.get('location');
+  var limit    = request.params.limit    || 30;
+  var page     = request.params.page     || 0;
+
+  if (!location) return response.error('Empty location');
+
+  // Query
+  var shouts = new Parse.Query('Shout');
+  var now    = Date.now();
+
+  shouts.near('location', location);
+  shouts.limit(limit);
+  shouts.skip(limit * page);
+
+  shouts.find().then(function(shouts) {
+    var ranks = [];
+
+    for (var i = 0; i < shouts.length; i++) {
+      var shout   = shouts[i];
+      var echoes  = shout.get('echoes') || 0;
+      var minutes = (now - shout.createdAt.getTime()) / 60000;
+      var meters  = location.kilometersTo(shout.get('location')) * 1000;
+
+      ranks[i] = meters + minutes/20 - echoes;
+    }
+
+    if (shouts.length) {
+      var shouts = _.sortBy(shouts, function(shout, index) {
+        return ranks[i];
+      });
+    }
+
+    response.success(shouts);
+  }, response.error);
 });
 
 /**
