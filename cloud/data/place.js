@@ -30,6 +30,8 @@ Parse.Cloud.beforeSave('Place', function(request, response) {
   }
 
   // Defaults
+  place.get('shouts') || place.set('shouts', 0);
+
   if (parent && !place.get('depth')) {
     return parent.fetch().then(function() {
       place.set('depth', parent.get('depth') + 1);
@@ -82,6 +84,12 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
   acl.setPublicWriteAccess(false);
   acl.setPublicReadAccess(true);
   place.setACL(acl);
+
+  // Defaults
+  place.get('shouts')    || place.set('shouts', 0);
+  place.get('entries')   || place.set('entries', 0);
+  place.get('locations') || place.set('locations', []);
+  place.get('promote')   || place.set('promote', false);
 
   // Map
   if (!place.get('map')) {

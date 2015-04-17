@@ -27,6 +27,8 @@ exports.post = function(post, user, response) {
   post.get('location')   || post.set('location', user.get('location'));
   post.get('place')      || post.set('place', user.get('place'));
   post.get('feeling')    || post.set('feeling', user.get('feeling'));
+  post.get('echoes')     || post.set('echoes', 0);
+  post.get('comments')   || post.set('comments', 0);
 
   if (!post.get('placeTemp') && user.get('placeTemp')) {
     post.set('placeTemp', user.get('placeTemp'));
