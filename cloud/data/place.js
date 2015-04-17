@@ -169,6 +169,7 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
  * @param {bool} [byRelevance=false]
  * @param {string} [byName=false]
  * @param {bool} [includeTemp=false]
+ * @param {int} [limit=30]
  *
  * @response {Parse.Object[]} List of place objects
  */
@@ -179,9 +180,11 @@ Parse.Cloud.define('getPlaces', function(request, response) {
   var relevance = request.params.byRelevance;
   var name      = request.params.byName;
   var temp      = request.params.includeTemp;
+  var limit     = request.params.limit || 30;
 
   // Query
   var places = new Parse.Query('Place');
+  places.limit(limit);
 
   // By distance
   if (distance) {
