@@ -289,6 +289,36 @@ Parse.Cloud.define('endorsePlace', function(request, response) {
 });
 
 /**
+ * Seek temp places for promoting
+ */
+Parse.Cloud.job('promotePlace', function(request, status) {
+  Parse.Cloud.useMasterKey();
+
+  var temps = new Parse.Query('PlaceTemp');
+  var tempsToDestroy = [];
+
+  temps.equalTo('promote', true);
+  temps.each(function(temp) {
+    var place = new Parse.Object('Place');
+
+    place.set('name', temp.get('name'));
+    place.set('parent', temp.get('parent'));
+    place.set('location', temp.get('location'));
+    place.set('shouts', temp.get('shouts'));
+
+    return place.save().then(function(place) {
+      temp.set('parent', place);
+
+      return temp.save();
+    }).then(function(temp) {
+      return temp.destroy();
+    });
+  }).then(function() {
+    status.success();
+  }, status.error);
+});
+
+/**
  * Clear place
  */
 function clearPlace(request, response) {
@@ -339,10 +369,10 @@ function clearPlace(request, response) {
     };
 
     promises.push(performSave(Parse.User));
-    promises.push(performSave('Shout'));
-    promises.push(performSave('Comment'));
     promises.push(performSave('Place'));
     promises.push(performSave('PlaceTemp'));
+    promises.push(performSave('Shout'));
+    promises.push(performSave('Comment'));
 
     Parse.Promise.when(promises).then(response.success, response.error);
   });
