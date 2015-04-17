@@ -10,9 +10,15 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
   // Params
   var shout = request.object;
   var user  = shout.get('user') || request.user;
+  var old   = new Parse.Object('Shout');
+  old.id = shout.id;
 
-  user.fetch().then(function() {
+  old.fetch().then(function() {
+    return user.fetch();
+  }).then(function() {
     if (validate.post(shout, user, response)) {
+      var promises = [];
+
       if (shout.isNew()) {
         var acl = new Parse.ACL(user);
 
@@ -20,22 +26,38 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
         shout.setACL(acl);
       }
 
-      response.success();
+      // Increment / decrement when place changes
+      var increment = function(field) {
+        var place    = shout.get(field);
+        var previous = old.get(field);
+        var toSave   = [];
+
+        if (place) {
+          place.increment('shouts');
+          toSave.push(place);
+        }
+
+        if (previous) {
+          previous.increment('shouts', -1);
+          toSave.push(previous);
+        }
+
+        return Parse.Object.saveAll(toSave, {useMasterKey: true});
+      }
+
+      if (shout.dirty('place')) {
+        promises.push(increment('place'));
+      }
+
+      if (shout.dirty('placeTemp')) {
+        promises.push(increment('placeTemp'));
+      }
+
+      return Parse.Promise.when(promises);
     }
+  }).then(function() {
+    response.success();
   }, response.error);
-});
-
-/**
- * Increment place shouts after save a shout
- */
-Parse.Cloud.afterSave('Shout', function(request) {
-  var shout = request.object;
-  var place = shout.get('place') || shout.get('placeTemp');
-
-  if (!shout.existed() && place) {
-    place.increment('shouts');
-    place.save(null, {useMasterKey: true});
-  }
 });
 
 /**
@@ -99,7 +121,7 @@ Parse.Cloud.afterDelete('Shout', function(request) {
   });
 
   // Decrement shouts in place
-  var place = shout.get('place');
+  var place = shout.get('place') || shout.get('placeTemp');
 
   if (place) {
     place.fetch().then(function() {
