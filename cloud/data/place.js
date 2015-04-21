@@ -249,7 +249,11 @@ Parse.Cloud.define('getPlaces', function(request, response) {
 
       for (var i = 0; i < keywords.length; i++) {
         var place = keywords[i].get('place') || keywords[i].get('placeTemp');
-        placesToReturn.push(place);
+
+        // Return each place only once
+        if (!_.where(placesToReturn, {id: place.id}).length) {
+          placesToReturn.push(place);
+        }
       }
 
       response.success(placesToReturn);
