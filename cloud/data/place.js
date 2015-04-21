@@ -163,6 +163,36 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
 });
 
 /**
+ * Get place
+ *
+ * @param {Parse.GeoPoint} [location]
+ *
+ * @response {Parse.Object} Place
+ */
+Parse.Cloud.define('getPlace', function(request, response) {
+  // Params
+  var location = request.params.location || request.user.get('location');
+
+  // Query
+  var place = new Parse.Query('Place');
+      place.near('location', location);
+      place.include(['parent', 'parent.parent', 'parent.parent.parent']);
+
+  place.first().then(function(place) {
+    if (place) {
+      while (place.get('depth') > 1
+        &&  place.get('location').kilometersTo(location) > .3) {
+        place = place.get('parent');
+      }
+
+      return Parse.Promise.as(place);
+    } else {
+      return Parse.Promise.error('Could not find place');
+    }
+  }).then(response.success, response.error);
+});
+
+/**
  * Get places
  *
  * @param {Parse.GeoPoint} byDistance
@@ -252,6 +282,7 @@ Parse.Cloud.define('proposePlace', function(request, response) {
       query.equalTo('name', placeName);
 
   query.first().then(function(place) {
+    // Verify if there's place with this name and this is near
     if (place && place.get('location').kilometersTo(location) < .3) {
       place.increment('entries');
       place.add('locations', location);
@@ -270,6 +301,7 @@ Parse.Cloud.define('proposePlace', function(request, response) {
 
       return place.save();
     } else {
+      // If not, get the parent place and create the place
       var parent = new Parse.Query('Place');
           parent.near('location', location);
           parent.equalTo('depth', 1);
