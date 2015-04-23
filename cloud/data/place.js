@@ -497,7 +497,7 @@ function clearPlace(request, response) {
       promises.push(performSave('Comment'));
 
       Parse.Promise.when(promises).then(response.success, response.error);
-    });
+    }, response.success);
   } else {
     response.success();
   }
