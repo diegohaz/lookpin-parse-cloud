@@ -199,7 +199,8 @@ Parse.Cloud.define('getPlace', function(request, response) {
       // Get current city from Google Maps API
       return Parse.Cloud.httpRequest({
         url: 'http://maps.googleapis.com/maps/api/geocode/json',
-        params: { latlng: location.latitude + ',' + location.longitude }
+        params: { latlng: location.latitude + ',' + location.longitude },
+        key: 'AIzaSyA3-zoMVbiQZA-vbbc0mRKWVq1mRvYd_nI'
       }).then(function(httpResponse) {
         var data = httpResponse.data;
 
