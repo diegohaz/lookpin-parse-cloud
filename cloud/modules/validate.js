@@ -9,8 +9,7 @@ exports.nickname = function(nickname) {
 
 // Validate feeling
 exports.feeling = function(feeling) {
-  var names     = require('cloud/modules/names.js');
-  var feelings  = Object.keys(names.adjectives['en']);
+  var feelings  = ['red', 'green', 'blue', 'black'];
 
   if (~feelings.indexOf(feeling)) {
     return true;
