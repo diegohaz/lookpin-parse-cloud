@@ -9,7 +9,7 @@ exports.nickname = function(nickname) {
 
 // Validate feeling
 exports.feeling = function(feeling) {
-  var feelings  = ['red', 'green', 'blue', 'black'];
+  var feelings  = ['red', 'blue', 'black'];
 
   if (~feelings.indexOf(feeling)) {
     return true;
