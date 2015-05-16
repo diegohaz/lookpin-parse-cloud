@@ -10,7 +10,7 @@ Parse.Cloud.beforeSave(Parse.User, function(request, response) {
 
   // Defaults
   user.get('setup')     || user.set('setup', false);
-  user.get('language')  || user.set('language', 'en');
+  user.get('nickname')  || user.set('nickname', 'User')
 
   // Validate nickname
   if (nickname && !validate.nickname(nickname)) {
