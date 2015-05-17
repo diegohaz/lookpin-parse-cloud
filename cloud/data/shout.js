@@ -153,7 +153,8 @@ Parse.Cloud.define('getShouts', function(request, response) {
   var shouts = new Parse.Query('Shout');
   var now    = Date.now();
 
-  shouts.near('location', location);
+  shouts.withinKilometers('location', location, 20000);
+
   // Include 4 levels of places depth
   shouts.include([
     'place', 'placeTemp',
