@@ -117,15 +117,29 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
  */
 Parse.Cloud.afterSave('PlaceTemp', function(request) {
   var place = request.object;
-  var keyword = new Parse.Object('PlaceKeyword');
 
   if (!place.existed()) {
+    var keyword = new Parse.Object('PlaceKeyword');
+
     keyword.set('placeTemp', place);
     keyword.set('keyword', place.get('name'));
-  }
+    keyword.set('location', place.get('location'));
+    keyword.save(null, {useMasterKey: true});
+  } else {
+    var keyword = new Parse.Query('PlaceKeyword');
 
-  keyword.set('location', place.get('location'));
-  keyword.save(null, {useMasterKey: true});
+    keyword.equalTo('placeTemp', place);
+    keyword.find(function(keywords) {
+      var keywordsToSave = [];
+
+      for (var i = 0; i < keywords.length; i++) {
+        keywords[i].set('location', place.get('location'));
+        keywordsToSave.push(keywords[i]);
+      }
+
+      Parse.Object.saveAll(keywordsToSave);
+    });
+  }
 });
 
 /**
