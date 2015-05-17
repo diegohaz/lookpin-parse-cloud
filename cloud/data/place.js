@@ -53,6 +53,7 @@ Parse.Cloud.afterSave('Place', function(request) {
     var keyword = new Parse.Object('PlaceKeyword');
     keyword.set('place', place);
     keyword.set('keyword', place.get('name'));
+    keyword.set('location', place.get('location'));
     keyword.save(null, {useMasterKey: true});
   }
 });
@@ -116,13 +117,15 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
  */
 Parse.Cloud.afterSave('PlaceTemp', function(request) {
   var place = request.object;
+  var keyword = new Parse.Object('PlaceKeyword');
 
   if (!place.existed()) {
-    var keyword = new Parse.Object('PlaceKeyword');
     keyword.set('placeTemp', place);
     keyword.set('keyword', place.get('name'));
-    keyword.save(null, {useMasterKey: true});
   }
+
+  keyword.set('location', place.get('location'));
+  keyword.save(null, {useMasterKey: true});
 });
 
 /**
@@ -139,10 +142,10 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
   var keyword = request.object;
   var place   = keyword.get('place') || keyword.get('placeTemp');
 
-  if (!place) return response.error('Empty place');
-
   // ACL
   if (keyword.isNew()) {
+    if (!place) return response.error('Empty place');
+
     var acl = new Parse.ACL();
 
     acl.setPublicReadAccess(true);
@@ -294,55 +297,41 @@ Parse.Cloud.define('getPlaces', function(request, response) {
   var temp      = request.params.includeTemp;
   var limit     = request.params.limit || 30;
 
-  // Query
-  var places = new Parse.Query('Place');
-  places.limit(limit);
+  var keywords = new Parse.Query('PlaceKeyword');
+  keywords.include('place');
 
   // By distance
   if (distance) {
-    places.near('location', distance);
+    keywords.near('location', distance);
   }
 
-  // By relevance
-  if (relevance) {
-    places.descending('shouts');
+  // includeTemp
+  if (temp) {
+    keywords.include('placeTemp');
+  } else {
+    keywords.doesNotExist('placeTemp');
   }
 
   // By name
   if (name) {
-    var keywords = new Parse.Query('PlaceKeyword');
-
     name = urlify(name);
-
     keywords.contains('keyword', name);
-    keywords.include('place');
-    keywords.matchesQuery('place', places);
+  }
 
-    if (temp) {
-      var tempKeywords = new Parse.Query('PlaceKeyword');
-      tempKeywords.include('placeTemp');
-      tempKeywords.matchesQuery('placeTemp', places);
+  keywords.find().then(function(keywords) {
+    placesToReturn = [];
 
-      keywords = Parse.Query.or(keywords, tempKeywords);
+    for (var i = 0; i < keywords.length; i++) {
+      var place = keywords[i].get('place') || keywords[i].get('placeTemp');
+
+      // Return each place only once
+      if (!_.where(placesToReturn, {id: place.id}).length) {
+        placesToReturn.push(place);
+      }
     }
 
-    keywords.find().then(function(keywords) {
-      placesToReturn = [];
-
-      for (var i = 0; i < keywords.length; i++) {
-        var place = keywords[i].get('place') || keywords[i].get('placeTemp');
-
-        // Return each place only once
-        if (!_.where(placesToReturn, {id: place.id}).length) {
-          placesToReturn.push(place);
-        }
-      }
-
-      response.success(placesToReturn);
-    }, response.error);
-  } else {
-    places.find().then(response.success, response.error);
-  }
+    response.success(placesToReturn);
+  }, response.error);
 });
 
 /**
