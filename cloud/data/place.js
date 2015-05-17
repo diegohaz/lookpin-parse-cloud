@@ -339,7 +339,7 @@ Parse.Cloud.define('getPlaces', function(request, response) {
       var place = keywords[i].get('place') || keywords[i].get('placeTemp');
 
       // Return each place only once
-      if (!_.where(placesToReturn, {id: place.id}).length) {
+      if (!_.where(placesToReturn, {id: place.id}).length && place.get('depth') > 1) {
         placesToReturn.push(place);
       }
     }
