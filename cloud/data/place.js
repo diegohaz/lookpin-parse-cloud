@@ -240,7 +240,7 @@ Parse.Cloud.define('getPlace', function(request, response) {
         }
       }).then(function(city) {
         var cityAddress = city.address_components;
-        var cityName    = cityAddress[0].long_name;
+        var cityName    = cityAddress[0].long_name.replace(' County', '');
         var cityCountry = cityAddress[cityAddress.length-1].long_name;
         var cityLocal   = city.geometry.location;
         var cityGeo     = new Parse.GeoPoint(cityLocal.lat, cityLocal.lng);
