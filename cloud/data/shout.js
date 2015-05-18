@@ -13,11 +13,14 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
   var old   = new Parse.Object('Shout');
   old.id = shout.id;
 
+  var validated = false;
+
   old.fetch().then(function() {
     return user.fetch();
   }).then(function() {
     if (validate.post(shout, user, response)) {
       var promises = [];
+      validated = true;
 
       if (shout.isNew()) {
         var acl = new Parse.ACL(user);
@@ -57,7 +60,13 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
     }
   }).then(function() {
     response.success();
-  }, response.error);
+  }, function(error) {
+    if (validated) {
+      response.success();
+    } else {
+      response.error(error);
+    }
+  });
 });
 
 /**
@@ -153,14 +162,15 @@ Parse.Cloud.define('getShouts', function(request, response) {
   var shouts = new Parse.Query('Shout');
   var now    = Date.now();
 
+  shouts.near('location', location);
   shouts.withinKilometers('location', location, 20000);
 
   // Include 4 levels of places depth
   shouts.include([
-    'place', 'placeTemp',
+    'user', 'user.place', 'user.placeTemp', 'place', 'placeTemp',
     'place.parent', 'placeTemp.parent',
     'place.parent.parent', 'placeTemp.parent.parent',
-    'place.parent.parent.parent', 'placeTemp.parent.parent.parent'
+    'place.parent.parent.parent', 'placeTemp.parent.parent.parent',
   ]);
   shouts.limit(limit);
   shouts.skip(limit * page);
