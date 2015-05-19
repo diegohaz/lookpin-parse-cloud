@@ -1,5 +1,5 @@
 var _ = require('underscore');
-var validate = require('cloud/modules/validate.js');
+var util = require('cloud/util.js');
 
 /**
  * Validate and set defaults to shout before save
@@ -10,69 +10,52 @@ Parse.Cloud.beforeSave('Shout', function(request, response) {
   // Params
   var shout = request.object;
   var user  = shout.get('user') || request.user;
-  var old   = new Parse.Object('Shout');
-  old.id = shout.id;
 
-  var validated = false;
+  user.fetch().then(function() {
+    // Definitions
+    shout.get('user')     || shout.set('user', user);
+    shout.get('location') || shout.set('location', user.get('location'));
+    shout.get('place')    || shout.set('place', user.get('place'));
+    shout.get('feeling')  || shout.set('feeling', user.get('feeling'));
+    shout.get('echoes')   || shout.set('echoes', 0);
 
-  old.fetch().then(function() {
-    return user.fetch();
-  }).then(function() {
-    if (validate.post(shout, user, response)) {
-      var promises = [];
-      validated = true;
-
-      if (shout.isNew()) {
-        var acl = new Parse.ACL(user);
-
-        acl.setPublicReadAccess(true);
-        shout.setACL(acl);
-      }
-
-      // Increment / decrement when place changes
-      var increment = function(field) {
-        var place    = shout.get(field);
-        var previous = old.get(field);
-        var toSave   = [];
-
-        if (place) {
-          place.increment('shouts');
-          toSave.push(place);
-        }
-
-        if (previous) {
-          previous.increment('shouts', -1);
-          toSave.push(previous);
-        }
-
-        return Parse.Object.saveAll(toSave, {useMasterKey: true});
-      }
-
-      if (shout.dirty('place')) {
-        promises.push(increment('place'));
-      }
-
-      if (shout.dirty('placeTemp')) {
-        promises.push(increment('placeTemp'));
-      }
-
-      return Parse.Promise.when(promises);
+    if (!shout.get('placeTemp') && user.get('placeTemp')) {
+      shout.set('placeTemp', user.get('placeTemp'));
     }
-  }).then(function() {
+
+    // Place
+    var place = shout.get('place') || shout.get('placeTemp');
+
+    // Empty validations
+    if (!shout.get('user'))     return response.error('Empty user');
+    if (!shout.get('location')) return response.error('Empty location');
+    if (!shout.get('feeling'))  return response.error('Empty feeling');
+    if (!shout.get('content'))  return response.error('Empty content');
+    if (!place)                 return response.error('Empty place');
+
+    if (!util.validateFeeling(user.get('feeling'))) {
+      return response.error('Invalid feeling');
+    }
+
+    if (shout.get('content').length > 255) {
+      return response.error('Content should not be larger than 255 characters');
+    }
+
+    if (shout.isNew()) {
+      var acl = new Parse.ACL(user);
+
+      acl.setPublicReadAccess(true);
+      shout.setACL(acl);
+    }
+
     response.success();
-  }, function(error) {
-    if (validated) {
-      response.success();
-    } else {
-      response.error(error);
-    }
-  });
+  }, response.error);
 });
 
 /**
  * Delete shout references
  */
-Parse.Cloud.afterDelete('Shout', function(request) {
+Parse.Cloud.beforeDelete('Shout', function(request, response) {
   Parse.Cloud.useMasterKey();
 
   // Object
@@ -109,35 +92,13 @@ Parse.Cloud.afterDelete('Shout', function(request) {
     }
 
     if (infosToSave.length) {
-      Parse.Object.saveAll(infosToSave);
+      return Parse.Object.saveAll(infosToSave);
+    } else {
+      return Parse.Promise.as();
     }
-  });
-
-  // Now, delete comments
-  query = new Parse.Query('Comment');
-  query.equalTo('shout', shout);
-
-  query.find().then(function(comments) {
-    var commentsToDestroy = [];
-
-    for (var i = 0; i < comments.length; i++) {
-      commentsToDestroy.push(comments[i]);
-    }
-
-    if (commentsToDestroy.length) {
-      Parse.Object.destroyAll(commentsToDestroy);
-    }
-  });
-
-  // Decrement shouts in place
-  var place = shout.get('place') || shout.get('placeTemp');
-
-  if (place) {
-    place.fetch().then(function() {
-      place.increment('shouts', -1);
-      place.save();
-    });
-  }
+  }).then(function() {
+    response.success();
+  }, response.error);
 });
 
 /**
@@ -167,7 +128,7 @@ Parse.Cloud.define('getShouts', function(request, response) {
 
   // Include 4 levels of places depth
   shouts.include([
-    'user', 'user.place', 'user.placeTemp', 'place', 'placeTemp',
+    'place', 'placeTemp',
     'place.parent', 'placeTemp.parent',
     'place.parent.parent', 'placeTemp.parent.parent',
     'place.parent.parent.parent', 'placeTemp.parent.parent.parent',
@@ -191,8 +152,7 @@ Parse.Cloud.define('getShouts', function(request, response) {
       ranks[i]    = meters + minutes/20 - echoes;
 
       // Place
-      // TODO: DRY
-      if (meters > 100000) {
+      if (meters > 20000) {
         // City depth level
         while (depth > 1) {
           depth = parent.get('depth');
@@ -214,11 +174,14 @@ Parse.Cloud.define('getShouts', function(request, response) {
           parent = parent.get('parent');
         }
       }
+
+      // Don't return unnecessary places
+      shout.attributes.place.attributes.parent = null
     }
 
     if (shouts.length) {
       var shouts = _.sortBy(shouts, function(shout, index) {
-        return ranks[i];
+        return ranks[index];
       });
     }
 

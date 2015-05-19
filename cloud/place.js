@@ -1,5 +1,5 @@
 var _ = require('underscore');
-var urlify = require('cloud/modules/urlify.js').create({
+var urlify = require('cloud/urlify.js').create({
   spaces: ' ',
   toLower: true,
   nonPrintable: '',
@@ -30,13 +30,11 @@ Parse.Cloud.beforeSave('Place', function(request, response) {
   }
 
   // Defaults
-  place.get('shouts') || place.set('shouts', 0);
-
   if (parent && !place.get('depth')) {
     return parent.fetch().then(function() {
       place.set('depth', parent.get('depth') + 1);
       response.success();
-    }, response.success);
+    }, response.error);
   } else {
     place.get('depth') || place.set('depth', 0);
     response.success();
@@ -55,6 +53,20 @@ Parse.Cloud.afterSave('Place', function(request) {
     keyword.set('keyword', place.get('name'));
     keyword.set('location', place.get('location'));
     keyword.save(null, {useMasterKey: true});
+  } else {
+    var keyword = new Parse.Query('PlaceKeyword');
+
+    keyword.equalTo('place', place);
+    keyword.find(function(keywords) {
+      var keywordsToSave = [];
+
+      for (var i = 0; i < keywords.length; i++) {
+        keywords[i].set('location', place.get('location'));
+        keywordsToSave.push(keywords[i]);
+      }
+
+      Parse.Object.saveAll(keywordsToSave);
+    });
   }
 });
 
@@ -87,7 +99,6 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
   place.setACL(acl);
 
   // Defaults
-  place.get('shouts')    || place.set('shouts', 0);
   place.get('entries')   || place.set('entries', 0);
   place.get('locations') || place.set('locations', []);
   place.get('promote')   || place.set('promote', false);
@@ -96,7 +107,7 @@ Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
   if (!place.get('map')) {
     var lat = location.latitude;
     var lng = location.longitude;
-    var map = 'https://www.google.com.br/maps/@' + lat + ',' + lng + ',18z';
+    var map = 'http://maps.google.com/maps/q=' + lat + ',' + lng;
     place.set('map', map);
   }
 
@@ -156,10 +167,10 @@ Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
   var keyword = request.object;
   var place   = keyword.get('place') || keyword.get('placeTemp');
 
+  if (!place) return response.error('Empty place');
+
   // ACL
   if (keyword.isNew()) {
-    if (!place) return response.error('Empty place');
-
     var acl = new Parse.ACL();
 
     acl.setPublicReadAccess(true);
@@ -195,6 +206,7 @@ Parse.Cloud.define('getPlace', function(request, response) {
   // Query
   var place = new Parse.Query('Place');
       place.near('location', location);
+      place.withinKilometers('location', location, 20000);
       place.include(['parent', 'parent.parent', 'parent.parent.parent']);
 
   place.first().then(function(place) {
@@ -251,7 +263,7 @@ Parse.Cloud.define('getPlace', function(request, response) {
         } else {
           // Verify if city exists
           var query = new Parse.Query('Place');
-              query.withinKilometers('location', cityGeo, 10);
+              query.near('location', cityGeo);
               query.equalTo('name', cityName);
               query.equalTo('depth', 1);
 
@@ -295,7 +307,6 @@ Parse.Cloud.define('getPlace', function(request, response) {
  * Get places
  *
  * @param {Parse.GeoPoint} byDistance
- * @param {bool} [byRelevance=false]
  * @param {string} [byName=false]
  * @param {bool} [includeTemp=false]
  * @param {int} [limit=30]
@@ -306,7 +317,6 @@ Parse.Cloud.define('getPlaces', function(request, response) {
   // Params
   var user      = request.user;
   var distance  = request.params.byDistance;
-  var relevance = request.params.byRelevance;
   var name      = request.params.byName;
   var temp      = request.params.includeTemp;
   var limit     = request.params.limit || 30;
@@ -366,11 +376,25 @@ Parse.Cloud.define('proposePlace', function(request, response) {
   placeName  = placeName.charAt(0).toUpperCase() + placeName.slice(1);
 
   // Query
-  var query = new Parse.Query('PlaceTemp');
-      query.near('location', location);
-      query.equalTo('name', placeName);
+  var place = new Parse.Query('Place');
+      place.near('location', location);
+      place.equalTo('name', placeName);
 
-  query.first().then(function(place) {
+  // Verify if it's place first
+  place.first().then(function(place) {
+    if (place && place.get('location').kilometersTo(location) < .3) {
+      return Parse.Promise.as(place);
+    } else {
+      return Parse.Promise.error();
+    }
+  }).then(response.success, function() {
+    place = new Parse.Query('PlaceTemp');
+    place.near('location', location);
+    place.equalTo('name', placeName);
+
+    // Verify if it's placeTemp second
+    return place.first();
+  }).then(function(place) {
     // Verify if there's place with this name and this is near
     if (place && place.get('location').kilometersTo(location) < .3) {
       place.increment('entries');

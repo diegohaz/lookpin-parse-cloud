@@ -1,5 +1,4 @@
 // Models
-require('cloud/data/user.js');
-require('cloud/data/shout.js');
-require('cloud/data/comment.js');
-require('cloud/data/place.js');
+require('cloud/user.js');
+require('cloud/shout.js');
+require('cloud/place.js');
