@@ -1,532 +1,315 @@
+var Shout = require('cloud/Shout');
+var urlify = require('cloud/library/urlify');
 var _ = require('underscore');
-var urlify = require('cloud/urlify.js').create({
-  spaces: ' ',
-  toLower: true,
-  nonPrintable: '',
-  trim: true
-});
 
-/**
- * Before save place
- *
- * @param {Parse.Object} parent
- * @param {String} name
- */
-Parse.Cloud.beforeSave('Place', function(request, response) {
-  var place   = request.object;
-  var parent  = place.get('parent');
+var Place = Parse.Object.extend('Place', {
 
-  // Validations
-  if (!place.get('name')) return response.error('Empty name');
+  filter: function() {
+    var place   = this;
+    var parent  = place.get('parent');
 
-  // ACL
-  if (place.isNew()) {
-    var acl = new Parse.ACL();
+    // Validations
+    if (!place.get('name')) return Parse.Promise.error('Empty name');
 
-    acl.setPublicReadAccess(true);
-    acl.setPublicWriteAccess(false);
+    // ACL
+    if (place.isNew()) {
+      var acl = new Parse.ACL();
 
-    place.setACL(acl);
-  }
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
 
-  // Defaults
-  if (parent && !place.get('depth')) {
-    return parent.fetch().then(function() {
-      place.set('depth', parent.get('depth') + 1);
-      response.success();
-    }, response.error);
-  } else {
-    place.get('depth') || place.set('depth', 0);
-    response.success();
-  }
-});
+      place.setACL(acl);
+    }
 
-/**
- * Create a place keyword after save a new place
- */
-Parse.Cloud.afterSave('Place', function(request) {
-  var place = request.object;
-
-  if (!place.existed()) {
-    var keyword = new Parse.Object('PlaceKeyword');
-    keyword.set('place', place);
-    keyword.set('keyword', place.get('name'));
-    keyword.set('location', place.get('location'));
-    keyword.save(null, {useMasterKey: true});
-  } else {
-    var keyword = new Parse.Query('PlaceKeyword');
-
-    keyword.equalTo('place', place);
-    keyword.find(function(keywords) {
-      var keywordsToSave = [];
-
-      for (var i = 0; i < keywords.length; i++) {
-        keywords[i].set('location', place.get('location'));
-        keywordsToSave.push(keywords[i]);
+    // Defaults
+    if (!place.get('radius') && place.get('types')) {
+      for (type in Place.types) {
+        if (place.is(type)) {
+          place.set('radius', Place.types[type]);
+        }
       }
+    }
 
-      Parse.Object.saveAll(keywordsToSave);
+    if (place.dirty('parent')) {
+      return Parse.Object.fetchAllIfNeeded([parent]).then(function() {
+        place.set('depth', parent.get('depth') + 1);
+
+        return Parse.Promise.as();
+      });
+    } else {
+      place.get('depth') || place.set('depth', 0);
+
+      return Parse.Promise.as();
+    }
+  },
+
+  wipe: function() {
+    Parse.Cloud.useMasterKey();
+
+    var place = this;
+    var parent = place.get('parent');
+    var promise;
+
+    var adept = function(object, parent) {
+      var objects = new Parse.Query(object);
+      var objectsToSave = [];
+      var objectsToDestroy = [];
+
+      objects.equalTo('place', place);
+
+      return objects.each(function(object) {
+        if (!parent && object.className == 'Shout') {
+          objectsToDestroy.push(object);
+        } else {
+          object.set('place', parent);
+          objectsToSave.push(object);
+        }
+      }).then(function() {
+        if (objectsToDestroy.length) {
+          return Parse.Object.destroyAll(objectsToDestroy);
+        } else {
+          return Parse.Object.saveAll(objectsToSave);
+        }
+      });
+    };
+
+    // Try to set objects place to place's parent
+    if (parent) {
+      promise = Parse.Object.fetchAllIfNeeded([parent]);
+    } else {
+      promise = Parse.Promise.as();
+    }
+
+    return promise.then(function() {
+      return adept(Parse.User, parent);
+    }).then(function() {
+      return adept(Place, parent);
+    }).then(function() {
+      return adept(Shout, parent);
     });
-  }
-});
+  },
 
-/**
- * Before delete place
- */
-Parse.Cloud.beforeDelete('Place', clearPlace);
+  is: function(type) {
+    return ~this.get('types').indexOf(type);
+  },
 
-/**
- * Before save PlaceTemp
- *
- * @param {String} name
- * @param {Parse.Object} parent
- * @param {Parse.GeoPoint} location
- */
-Parse.Cloud.beforeSave('PlaceTemp', function(request, response) {
-  var place     = request.object;
-  var parent    = place.get('parent');
-  var location  = place.get('location');
-
-  // Empty validations
-  if (!place.get('name')) return response.error('Empty name');
-  if (!parent)            return response.error('Empty parent');
-  if (!location)          return response.error('Empty location');
-
-  // ACL
-  var acl = new Parse.ACL();
-  acl.setPublicWriteAccess(false);
-  acl.setPublicReadAccess(true);
-  place.setACL(acl);
-
-  // Defaults
-  place.get('entries')   || place.set('entries', 0);
-  place.get('locations') || place.set('locations', []);
-  place.get('promote')   || place.set('promote', false);
-
-  // Map
-  if (!place.get('map')) {
-    var lat = location.latitude;
-    var lng = location.longitude;
-    var map = 'http://maps.google.com/maps/q=' + lat + ',' + lng;
-    place.set('map', map);
+  contains: function(location) {
+    return this.get('location').kilometersTo(location) * 1000 < this.get('radius');
   }
 
-  // Depth
-  if (!place.get('depth')) {
-    parent.fetch().then(function(parent) {
-      place.set('depth', parent.get('depth') + 1);
+}, {
 
-      response.success();
-    }, response.error);
-  } else {
-    response.success();
-  }
-});
+  types: {
+    bus_station: 10,
+    establishment: 30,
+    art_gallery: 40,
+    food: 40,
+    subway_station: 50,
+    movie_theater: 75,
+    aquarium: 75,
+    restaurant: 100,
+    parking: 100,
+    park: 100,
+    zoo: 100,
+    night_club: 150,
+    museum: 150,
+    church: 150,
+    casino: 150,
+    school: 200,
+    city_hall: 200,
+    hindu_temple: 200,
+    hospital: 250,
+    shopping_mall: 300,
+    cemetery: 300,
+    campground: 300,
+    university: 500,
+    amusement_park: 500,
+    stadium: 750,
+    airport: 1000,
+  },
 
-/**
- * Create a place keyword after save a new place temp
- */
-Parse.Cloud.afterSave('PlaceTemp', function(request) {
-  var place = request.object;
+  get: function(location) {
+    Parse.Cloud.useMasterKey();
 
-  if (!place.existed()) {
-    var keyword = new Parse.Object('PlaceKeyword');
+    var place = new Parse.Query(Place);
 
-    keyword.set('placeTemp', place);
-    keyword.set('keyword', place.get('name'));
-    keyword.set('location', place.get('location'));
-    keyword.save(null, {useMasterKey: true});
-  } else {
-    var keyword = new Parse.Query('PlaceKeyword');
+    place.near('location', location);
+    place.withinKilometers('location', location, 20000);
+    place.include([
+      'parent', 'parent.parent', 'parent.parent.parent',
+      'parent.parent.parent.parent', 'parent.parent.parent.parent.parent',
+      'parent.parent.parent.parent.parent.parent',
+    ]);
 
-    keyword.equalTo('placeTemp', place);
-    keyword.find(function(keywords) {
-      var keywordsToSave = [];
-
-      for (var i = 0; i < keywords.length; i++) {
-        keywords[i].set('location', place.get('location'));
-        keywordsToSave.push(keywords[i]);
-      }
-
-      Parse.Object.saveAll(keywordsToSave);
-    });
-  }
-});
-
-/**
- * Before delete proposed place
- */
-Parse.Cloud.beforeDelete('PlaceTemp', clearPlace);
-
-/**
- * Before save place keyword
- *
- * @param {Parse.Object} [place|placeTemp]
- */
-Parse.Cloud.beforeSave('PlaceKeyword', function(request, response) {
-  var keyword = request.object;
-  var place   = keyword.get('place') || keyword.get('placeTemp');
-
-  if (!place) return response.error('Empty place');
-
-  // ACL
-  if (keyword.isNew()) {
-    var acl = new Parse.ACL();
-
-    acl.setPublicReadAccess(true);
-    acl.setPublicWriteAccess(false);
-
-    keyword.setACL(acl);
-  }
-
-  if (!keyword.get('keyword') && place) {
-    place.fetch().then(function() {
-      keyword.set('keyword', urlify(place.get('name')));
-      response.success();
-    }, response.error);
-  } else {
-    keyword.set('keyword', urlify(keyword.get('keyword')));
-    response.success();
-  }
-});
-
-/**
- * Get place
- *
- * @param {Parse.GeoPoint} [location]
- *
- * @response {Parse.Object} Place
- */
-Parse.Cloud.define('getPlace', function(request, response) {
-  Parse.Cloud.useMasterKey();
-
-  // Params
-  var location = request.params.location || request.user.get('location');
-
-  // Query
-  var place = new Parse.Query('Place');
-      place.near('location', location);
-      place.withinKilometers('location', location, 20000);
-      place.include(['parent', 'parent.parent', 'parent.parent.parent']);
-
-  place.first().then(function(place) {
-    if (place) {
-      while (place.get('depth') > 1
-        &&  place.get('location').kilometersTo(location) > .3) {
+    return place.first().then(function(place) {
+      while (place && !place.contains(location)) {
         place = place.get('parent');
       }
 
       return Parse.Promise.as(place);
-    } else {
-      return Parse.Promise.error('Could not find place');
-    }
-  }).then(function(place) {
-    var depth = place.get('depth');
+    }).then(function(place) {
+      if (place && !place.is('political')) {
+        return Parse.Promise.as(place);
+      } else {
+        return Place.getFromGoogle(location);
+      }
+    });
+  },
 
-    // If current place is city and current location is far
-    if (depth === 1 && place.get('location').kilometersTo(location) > 10) {
-      // Get current city from Google Maps API
+  getFromGoogle: function(location) {
+    var types = ['country', 'administrative_area_level_1', 'locality', 'neighborhood'];
+    var saveGoogleResults = function(results, parent, i) {
+      var j = i;
+
+      while (results[j] && !~results[j].types.indexOf(types[i])) {
+        j++;
+      }
+
+      if (results[j]) {
+        return Place.saveGoogleResult(results[j], parent);
+      } else {
+        return Parse.Promise.as(parent);
+      }
+    };
+
+    // Call Google Geocode API
+    return Parse.Cloud.httpRequest({
+      url: 'https://maps.googleapis.com/maps/api/geocode/json',
+      params: {
+        latlng: location.latitude + ',' + location.longitude,
+        components: types.join('|')
+      }
+    }).then(function(httpResponse) {
+      var data = httpResponse.data;
+
+      if (data.status == 'OK') {
+        var results = data.results.reverse();
+
+        return Place.saveGoogleResult(results[0]).then(function(parent) {
+          return saveGoogleResults(results, parent, 1);
+        }).done(function(parent) {
+          return saveGoogleResults(results, parent, 2);
+        }).done(function(parent) {
+          return saveGoogleResults(results, parent, 3);
+        });
+      } else {
+        return Parse.Promise.error(data.status);
+      }
+    }).then(function(place) {
+      // Call Google Places API
       return Parse.Cloud.httpRequest({
-        url: 'http://maps.googleapis.com/maps/api/geocode/json',
-        params: { latlng: location.latitude + ',' + location.longitude },
-        key: 'AIzaSyA3-zoMVbiQZA-vbbc0mRKWVq1mRvYd_nI'
+        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+        params: {
+          location: location.latitude + ',' + location.longitude,
+          key: 'AIzaSyAFnlqLMFUeDJo-sRRTED7h-oyDcw3F3GM',
+          rankby: 'prominence',
+          radius: 500,
+          types: Object.keys(Place.types).join('|')
+        }
       }).then(function(httpResponse) {
         var data = httpResponse.data;
 
         if (data.status == 'OK') {
-          var results = data.results;
+          var contains = false;
 
-          for (var i = 0; i < results.length; i++) {
-            var result = results[i];
-            var types  = result.types;
+          for (var i = 0; i < data.results.length; i++) {
+            var result = data.results[i];
+            var establishment = Place.parseGoogleResult(result);
 
-            // Iterate until result is city
-            if (~types.indexOf('administrative_area_level_2')) {
-              return Parse.Promise.as(result);
+            if (establishment.contains(location)) {
+              contains = true;
+              break;
             }
           }
 
-          return Parse.Promise.error('Could not find city');
+          if (contains) {
+            establishment.set('parent', place);
+            return establishment.save(null, {useMasterKey: true});
+          } else {
+            return Parse.Promise.as(place);
+          }
         } else {
-          return Parse.Promise.error(data.status);
-        }
-      }).then(function(city) {
-        var cityAddress = city.address_components;
-        var cityName    = cityAddress[0].long_name.replace(' County', '');
-        var cityCountry = cityAddress[cityAddress.length-1].long_name;
-        var cityLocal   = city.geometry.location;
-        var cityGeo     = new Parse.GeoPoint(cityLocal.lat, cityLocal.lng);
-
-        // Same city
-        if (place.get('name') == cityName) {
           return Parse.Promise.as(place);
-        } else {
-          // Verify if city exists
-          var query = new Parse.Query('Place');
-              query.near('location', cityGeo);
-              query.equalTo('name', cityName);
-              query.equalTo('depth', 1);
-
-          return query.first().then(function(city) {
-            if (city) {
-              return Parse.Promise.as(city);
-            } else {
-              // Verift if country exists
-              var query = new Parse.Query('Place');
-                  query.equalTo('depth', 0);
-                  query.equalTo('name', cityCountry);
-
-              return query.first().then(function(country) {
-                if (country) {
-                  return Parse.Promise.as(country);
-                } else {
-                  country = new Parse.Object('Place');
-                  country.set('name', cityCountry);
-
-                  return country.save();
-                }
-              }).then(function(country) {
-                city = new Parse.Object('Place');
-                city.set('name', cityName);
-                city.set('location', cityGeo);
-                city.set('parent', country);
-
-                return city.save();
-              });
-            }
-          });
         }
       });
+    });
+  },
+
+  saveGoogleResult: function(result, parent) {
+    var place = new Parse.Query(Place);
+
+    place.equalTo('place_id', result.place_id);
+
+    return place.first().then(function(place) {
+      if (place) {
+        return Parse.Promise.as(place);
+      } else {
+        return Parse.Promise.error();
+      }
+    }).fail(function() {
+      place = Place.parseGoogleResult(result);
+      place.set('parent', parent);
+
+      return place.save(null, {useMasterKey: true});
+    });
+  },
+
+  parseGoogleResult: function(result) {
+    var place = new Place;
+    var geometry = result.geometry;
+    var placeLocation = new Parse.GeoPoint(geometry.location.lat, geometry.location.lng);
+
+    place.set('place_id', result.place_id);
+    place.set('types', result.types);
+    place.set('location', placeLocation);
+
+    // Is Google Geocode API
+    if ('address_components' in result) {
+      var name = result.address_components[0].long_name.replace('State of ', '');
+      var northeast = new Parse.GeoPoint(geometry.bounds.northeast.lat, geometry.bounds.northeast.lng);
+      var southwest = new Parse.GeoPoint(geometry.bounds.southwest.lat, geometry.bounds.southwest.lng);
+
+      place.set('radius', northeast.kilometersTo(southwest) * 1000 / 2);
+      place.set('name', name);
+    // Is Google Places API
     } else {
-      return Parse.Promise.as(place);
-    }
-  }).then(response.success, response.error);
-});
+      place.set('name', result.name);
 
-/**
- * Get places
- *
- * @param {Parse.GeoPoint} byDistance
- * @param {string} [byName=false]
- * @param {bool} [includeTemp=false]
- * @param {int} [limit=30]
- *
- * @response {Parse.Object[]} List of place objects
- */
-Parse.Cloud.define('getPlaces', function(request, response) {
-  // Params
-  var user      = request.user;
-  var distance  = request.params.byDistance;
-  var name      = request.params.byName;
-  var temp      = request.params.includeTemp;
-  var limit     = request.params.limit || 30;
-
-  var keywords = new Parse.Query('PlaceKeyword');
-  keywords.include('place');
-
-  // By distance
-  if (distance) {
-    keywords.near('location', distance);
-  }
-
-  // includeTemp
-  if (temp) {
-    keywords.include('placeTemp');
-  } else {
-    keywords.doesNotExist('placeTemp');
-  }
-
-  // By name
-  if (name) {
-    name = urlify(name);
-    keywords.contains('keyword', name);
-  }
-
-  keywords.find().then(function(keywords) {
-    placesToReturn = [];
-
-    for (var i = 0; i < keywords.length; i++) {
-      var place = keywords[i].get('place') || keywords[i].get('placeTemp');
-
-      // Return each place only once
-      if (!_.where(placesToReturn, {id: place.id}).length && place.get('depth') > 1) {
-        placesToReturn.push(place);
+      // Radius
+      for (type in Place.types) {
+        if (place.is(type)) {
+          place.set('radius', Place.types[type]);
+        }
       }
     }
 
-    response.success(placesToReturn);
-  }, response.error);
-});
+    return place;
+  },
 
-/**
- * Propose a new place
- *
- * @param {string} placeName
- * @param {Parse.GeoPoint} [location]
- *
- * @response {Parse.Object} Place object
- */
-Parse.Cloud.define('proposePlace', function(request, response) {
-  Parse.Cloud.useMasterKey();
+  list: function(location, limit) {
+    // Params
+    limit = limit || 20;
 
-  // Params
-  var placeName = request.params.placeName;
-  var location  = request.params.location || request.user.get('location');
+    if (!location) return Parse.Promise.error('Empty location');
 
-  placeName  = placeName.charAt(0).toUpperCase() + placeName.slice(1);
+    // Query
+    var places = new Parse.Query(Place);
 
-  // Query
-  var place = new Parse.Query('Place');
-      place.near('location', location);
-      place.equalTo('name', placeName);
+    places.near('location', location);
+    places.limit(limit - 3);
 
-  // Verify if it's place first
-  place.first().then(function(place) {
-    if (place && place.get('location').kilometersTo(location) < .3) {
-      return Parse.Promise.as(place);
-    } else {
-      return Parse.Promise.error();
-    }
-  }).then(response.success, function() {
-    place = new Parse.Query('PlaceTemp');
-    place.near('location', location);
-    place.equalTo('name', placeName);
+    return places.find().then(function(places) {
+      var regions = new Parse.Query(Place);
 
-    // Verify if it's placeTemp second
-    return place.first();
-  }).then(function(place) {
-    // Verify if there's place with this name and this is near
-    if (place && place.get('location').kilometersTo(location) < .3) {
-      place.increment('entries');
-      place.add('locations', location);
+      regions.near('location', location);
+      regions.limit(3);
 
-      // Set location by average
-      var locations = place.get('locations');
-      var lats  = _.map(locations, function(point) { return point.latitude });
-      var longs = _.map(locations, function(point) { return point.longitude });
-      var sum   = function(memo, num) { return memo + num };
-      location  = new Parse.GeoPoint();
-
-      location.latitude  = _.reduce(lats, sum) / lats.length;
-      location.longitude = _.reduce(longs, sum) / longs.length;
-
-      place.set('location', location);
-
-      return place.save();
-    } else {
-      // If not, get the parent place and create the place
-      var parent = new Parse.Query('Place');
-          parent.near('location', location);
-          parent.equalTo('depth', 1);
-
-      return parent.first().then(function(parent) {
-        if (parent) {
-          place = new Parse.Object('PlaceTemp');
-          place.set('name', placeName);
-          place.set('parent', parent);
-          place.set('location', location);
-          place.add('locations', location);
-          place.increment('entries');
-
-          return place.save();
-        } else {
-          return Parse.Promise.error('Could not find parent place');
-        }
+      return regions.find().then(function(regions) {
+        return Parse.Promise.as(_.union(places, regions));
       });
-    }
-  }).then(response.success, response.error);
-});
-
-/**
- * Seek temp places for promoting
- */
-Parse.Cloud.job('promotePlace', function(request, status) {
-  Parse.Cloud.useMasterKey();
-
-  var temps = new Parse.Query('PlaceTemp');
-  var tempsToDestroy = [];
-
-  temps.equalTo('promote', true);
-  temps.each(function(temp) {
-    var place = new Parse.Object('Place');
-
-    place.set('name', temp.get('name'));
-    place.set('parent', temp.get('parent'));
-    place.set('location', temp.get('location'));
-    place.set('shouts', temp.get('shouts'));
-
-    return place.save().then(function(place) {
-      temp.set('parent', place);
-
-      return temp.save();
-    }).then(function(temp) {
-      return temp.destroy();
     });
-  }).then(function() {
-    status.success();
-  }, status.error);
+  }
+
 });
 
-/**
- * Clear place
- */
-function clearPlace(request, response) {
-  Parse.Cloud.useMasterKey();
-
-  var place  = request.object;
-  var object = place.className;
-  var column = object.charAt(0).toLowerCase() + object.slice(1);
-
-  // Delete keywords
-  var keywords = new Parse.Query('PlaceKeyword');
-
-  keywords.equalTo(column, place);
-  keywords.find().then(function(results) {
-    var keywordsToDelete = [];
-
-    for (var i = 0; i < results.length; i++) {
-      keywordsToDelete.push(results[i]);
-    }
-
-    if (keywordsToDelete.length) {
-      Parse.Object.destroyAll(keywordsToDelete);
-    }
-  });
-
-  // Try to set objects place to place's parent
-  if (place.get('parent')) {
-    place.get('parent').fetch().then(function(parent) {
-      var promises = [];
-      var performSave = function(object) {
-        var objects = new Parse.Query(object);
-
-        objects.equalTo(column, place);
-        return objects.find().then(function(results) {
-          var objectsToSave = [];
-
-          for (var i = 0; i < results.length; i++) {
-            results[i].unset('placeTemp');
-            results[i].set('place', parent);
-            objectsToSave.push(results[i]);
-          }
-
-          if (objectsToSave.length) {
-            return Parse.Object.saveAll(objectsToSave);
-          } else {
-            return Parse.Promise.as();
-          }
-        });
-      };
-
-      promises.push(performSave(Parse.User));
-      promises.push(performSave('Place'));
-      promises.push(performSave('PlaceTemp'));
-      promises.push(performSave('Shout'));
-      promises.push(performSave('Comment'));
-
-      Parse.Promise.when(promises).then(response.success, response.error);
-    }, response.success);
-  } else {
-    response.success();
-  }
-}
+module.exports = Place;
