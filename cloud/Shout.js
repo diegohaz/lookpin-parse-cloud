@@ -1,3 +1,4 @@
+var _ = require('underscore');
 var Feeling = require('cloud/Feeling');
 
 var Shout = Parse.Object.extend('Shout', {
@@ -90,24 +91,16 @@ var Shout = Parse.Object.extend('Shout', {
   },
 
   flag: function(description) {
-    var shout = this;
-    var flag = new Parse.Object('Flag');
+    this.increment('flags');
 
-    flag.set('shout', shout);
-    flag.set('description', description);
-
-    return flag.save().then(function(flag) {
-      shout.increment('flags');
-      shout.save();
-
-      return Parse.Promise.as(flag);
-    });
+    return this.save(null, {useMasterKey: true});
   }
 
 }, {
 
-  list: function(location, limit, page) {
+  list: function(location, place, limit, page) {
     // Params
+    var parents = [];
     limit = limit || 20;
     page  = page  || 0;
 
@@ -129,7 +122,16 @@ var Shout = Parse.Object.extend('Shout', {
     shouts.limit(limit);
     shouts.skip(limit * page);
 
-    return shouts.find().then(function(shouts) {
+    return place.fetch().then(function() {
+      var parent = place;
+
+      while (parent) {
+        parents.push(parent);
+        parent = parent.get('parent');
+      }
+
+      return shouts.find();
+    }).then(function(shouts) {
       var ranks = [];
 
       for (var i = 0; i < shouts.length; i++) {
@@ -148,7 +150,7 @@ var Shout = Parse.Object.extend('Shout', {
         ranks[i] = meters + minutes/20 - echoes/10;
 
         // Place radius
-        while (parent && meters > parent.get('radius')) {
+        while (parent && !_.where(parents, {id: parent.id}).length) {
           shout.attributes.place = parent;
           parent = parent.get('parent');
         }

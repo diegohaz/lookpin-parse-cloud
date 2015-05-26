@@ -10,16 +10,27 @@ var User = Parse.Object.extend('_User', {
     var place = user.get('place');
     var feeling = user.get('feeling');
     var location = user.get('location');
+    var accuracy = user.get('locationAccuracy') || 20;
 
     // Validate feeling
     if (feeling && !Feeling.validate(feeling)) {
       return Parse.Promise.error('Invalid feeling');
     }
 
+    if (!user.get('locationAccuracy')) {
+      user.set('locationAccuracy', accuracy);
+    }
+
     // Place user
     if (location && user.dirty('location')) {
-      return Place.get(location).then(function(place) {
+      return Place.get(location, accuracy).then(function(place) {
         user.set('place', place);
+
+        return Parse.Promise.as();
+      });
+    } else if (place && user.dirty('place')) {
+      return Parse.Object.fetchAllIfNeeded([place]).then(function() {
+        user.set('location', place.get('location'));
 
         return Parse.Promise.as();
       });

@@ -1,0 +1,217 @@
+{ "results": [
+    {
+        "ACL": {"*": {"read": true}},
+        "depth": 0,
+        "location": {"__type": "GeoPoint", "latitude": -14.235004, "longitude": -51.92528},
+        "map": "https://maps.google.com/maps?q=-14.235004,-51.92528",
+        "name": "Brazil",
+        "objectId": "BdM0rDruXH",
+        "place_id": "ChIJzyjM68dZnAARYz4p8gYVWik",
+        "radius": 3.1938647758948402e+06,
+        "types": ["country", "political"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "depth": 1,
+        "location": {"__type": "GeoPoint", "latitude": -22.9139476, "longitude": -43.2093973},
+        "map": "https://maps.google.com/maps?q=-22.9139476,-43.2093973",
+        "name": "Rio de Janeiro",
+        "objectId": "HGv0GEHKOg",
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "BdM0rDruXH"},
+        "place_id": "ChIJw4riypQYmAAR0IMFwRrDSQM",
+        "radius": 248983.70453161767,
+        "types": ["administrative_area_level_1", "political"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "depth": 2,
+        "location": {"__type": "GeoPoint", "latitude": -22.9068467, "longitude": -43.1728965},
+        "map": "https://maps.google.com/maps?q=-22.9068467,-43.1728965",
+        "name": "Rio de Janeiro",
+        "objectId": "UPoH3hLHVi",
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "HGv0GEHKOg"},
+        "place_id": "ChIJW6AIkVXemwARTtIvZ2xC3FA",
+        "radius": 39965.33798174921,
+        "types": ["locality", "political"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "depth": 3,
+        "location": {"__type": "GeoPoint", "latitude": -22.9760044, "longitude": -43.2285147},
+        "map": "https://maps.google.com/maps?q=-22.9760044,-43.2285147",
+        "name": "Gávea",
+        "objectId": "z7O24lnvoC",
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "UPoH3hLHVi"},
+        "place_id": "ChIJQ6kctjLUmwARvnL66pdFd7w",
+        "radius": 2076.5691191760343,
+        "types": ["neighborhood", "political"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "z7O24lnvoC"},
+        "location": {"__type": "GeoPoint", "latitude": -22.978823, "longitude": -43.233249},
+        "map": "https://maps.google.com/maps?q=-22.978823,-43.233249",
+        "objectId": "yG4CtNrQ2v",
+        "place_id": "ChIJt0dQ7rXVmwARnq-3BhxFABg",
+        "name": "PUC-Rio",
+        "depth": 4,
+        "radius": 250,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.980647708078234, "longitude": -43.233506759524516},
+        "map": "https://maps.google.com/maps?q=-22.980647708078234,-43.233506759524516",
+        "name": "RDC",
+        "depth": 5,
+        "radius": 40,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.97911325332469, "longitude": -43.234030704715735},
+        "map": "https://maps.google.com/maps?q=-22.97911325332469,-43.234030704715735",
+        "name": "Tendas",
+        "depth": 5,
+        "radius": 30,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.978998178717482, "longitude": -43.23260017287748},
+        "map": "https://maps.google.com/maps?q=-22.978998178717482,-43.23260017287748",
+        "name": "Pilotis",
+        "depth": 5,
+        "radius": 50,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.97895891771773, "longitude": -43.232141088464736},
+        "map": "https://maps.google.com/maps?q=-22.97895891771773,-43.232141088464736",
+        "name": "Bandejão",
+        "depth": 5,
+        "radius": 25,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.979882210430077, "longitude": -43.2327289189102},
+        "map": "https://maps.google.com/maps?q=-22.979882210430077,-43.2327289189102",
+        "name": "Edifício Cardeal Leme",
+        "depth": 5,
+        "radius": 40,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.979418219965684, "longitude": -43.23406691453743},
+        "map": "https://maps.google.com/maps?q=-22.979418219965684,-43.23406691453743",
+        "place_id": "ChIJQxVbPMrVmwARTrU2PGzGH4E",
+        "name": "Gourmet do Campus",
+        "depth": 5,
+        "radius": 20,
+        "types": ["restaurant", "food", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.979503412952916, "longitude": -43.233732979515075},
+        "map": "https://maps.google.com/maps?q=-22.979503412952916,-43.233732979515075",
+        "place_id": "ChIJ0zawKKJ9mQAR8wii_C_-2ng",
+        "name": "Igreja Sagrado Coração de Jesus",
+        "depth": 5,
+        "radius": 20,
+        "types": ["church", "place_of_worship", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.981138737491335, "longitude": -43.23413329921055},
+        "map": "https://maps.google.com/maps?q=-22.981138737491335,-43.23413329921055",
+        "name": "IMA",
+        "depth": 5,
+        "radius": 20,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.979741088756523, "longitude": -43.23407563171673},
+        "map": "https://maps.google.com/maps?q=-22.979741088756523,-43.23407563171673",
+        "place_id": "ChIJ49c6GcrVmwARNTL-SFxzMXo",
+        "name": "IAG",
+        "depth": 5,
+        "radius": 30,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.978754577102926, "longitude": -43.23228190443802},
+        "map": "https://maps.google.com/maps?q=-22.978754577102926,-43.23228190443802",
+        "name": "Biblioteca",
+        "depth": 5,
+        "radius": 25,
+        "types": ["library", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.978994106251633, "longitude": -43.23373297951508},
+        "map": "https://maps.google.com/maps?q=-22.978994106251633,-43.23373297951508",
+        "name": "Barraca",
+        "depth": 5,
+        "radius": 10,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.9784746711777, "longitude": -43.23266454589384},
+        "map": "https://maps.google.com/maps?q=-22.9784746711777,-43.23266454589384",
+        "name": "Vila dos diretórios",
+        "depth": 5,
+        "radius": 50,
+        "types": ["university", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.977743732729216, "longitude": -43.232058366656474},
+        "map": "https://maps.google.com/maps?q=-22.977743732729216,-43.232058366656474",
+        "name": "Ginásio",
+        "depth": 5,
+        "radius": 25,
+        "types": ["gym", "establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
+        "location": {"__type": "GeoPoint", "latitude": -22.977901773809872, "longitude": -43.231768688082866},
+        "map": "https://maps.google.com/maps?q=-22.977901773809872,-43.231768688082866",
+        "name": "Instituto Tecgraf",
+        "objectId": "LtH0G62ccA",
+        "place_id": "ChIJE8o5a7bVmwARq0jHH50xPuY",
+        "depth": 5,
+        "radius": 25,
+        "types": ["establishment"]
+    },{
+        "ACL": {"*": {"read": true}},
+        "parent": {"__type": "Pointer", "className": "Place", "objectId": "LtH0G62ccA"},
+        "location": {"__type": "GeoPoint", "latitude": -22.977901773809872, "longitude": -43.231768688082866},
+        "map": "https://maps.google.com/maps?q=-22.977901773809872,-43.231768688082866",
+        "name": "BEPiD",
+        "depth": 6,
+        "radius": 20,
+        "types": ["establishment"]
+    },{
+        "ACL":{"*":{"read":true}},
+        "depth":4,
+        "location":{"__type":"GeoPoint","latitude":-22.975315311504538,"longitude":-43.2284061124115},
+        "map":"https://maps.google.com/maps?q=-22.975315311504538,-43.2284061124115",
+        "name":"Shopping da Gávea",
+        "objectId":"VDBwWSZ0ea",
+        "parent":{"__type":"Pointer","className":"Place","objectId":"z7O24lnvoC"},
+        "place_id":"ChIJfaUZTrfVmwARCnkGu8F9V3A",
+        "radius":75,
+        "types":["shopping_mall","establishment"]
+    },{
+        "ACL":{"*":{"read":true}},
+        "depth":4,
+        "location":{"__type":"GeoPoint","latitude":-22.979596013965065,"longitude":-43.23031182191658},
+        "map":"https://maps.google.com/maps?q=-22.979596013965065,-43.23031182191658",
+        "name":"Minhocão",
+        "parent":{"__type":"Pointer","className":"Place","objectId":"z7O24lnvoC"},
+        "radius":100,
+        "types":["establishment"]
+    }
+]}

@@ -1,20 +1,122 @@
-<html>
-  <head>
-    <title>My ParseApp site</title>
-    <style>
-    body { font-family: Helvetica, Arial, sans-serif; }
-    div { width: 800px; height: 400px; margin: 40px auto; padding: 20px; border: 2px solid #5298fc; }
-    h1 { font-size: 30px; margin: 0; }
-    p { margin: 40px 0; }
-    em { font-family: monospace; }
-    a { color: #5298fc; text-decoration: none; }
-    </style>
-  </head>
-  <body>
-    <div>
-      <h1>Congratulations! You're already hosting with Parse.</h1>
-      <p>To get started, edit this file at <em>public/index.html</em> and start adding static content.</p>
-      <p>If you want something a bit more dynamic, delete this file and check out <a href="https://parse.com/docs/hosting_guide#webapp">our hosting docs</a>.</p>
-    </div>
-  </body>
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+
+  <title>My Parse App</title>
+  <meta name="description" content="My Parse App">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="http://www.parsecdn.com/js/parse-1.4.2.min.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+
+  <style>
+    html, body, #map-canvas {
+      height: 100%;
+      margin: 0px;
+      padding: 0px
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main">
+    <button onclick="getLocation()">Get location</button>
+    <br>
+    <button onclick="saveLocation()">Save location</button>
+    <br>
+    <input id="latlng" placeholder="Latitude, longitude">
+    <button onclick="emulateLocation()">Emulate location</button>
+    <br>
+    <input id="shout">
+    <button onclick="shout()">Shout</button>
+  </div>
+  <div id="text"></div>
+  <div id="map-canvas"></div>
+
+  <script type="text/javascript">
+    Parse.initialize("UlT4gOYazGB5OfO02VwcAtDtXrTrPRtiOKK8uofD", "mq3lgovkfRvJnNe50sJ5PNX6y4bjtoTuu5FfUcnC");
+    var text = document.getElementById('text');
+    var user, coords, map;
+
+    if (!Parse.User.current()) {
+      Parse.User.signUp("" + Math.round(Math.random() * 1000), "123456").then(function(user) {
+        window.user = user;
+        text.textContent = 'User signed up';
+      });
+    } else {
+      user = Parse.User.current();
+      text.textContent = 'User logged in';
+    }
+
+    function initialize() {
+      var mapOptions = {
+        zoom: 18,
+        center: new google.maps.LatLng(-34.397, 150.644),
+        mapTypeId: google.maps.MapTypeId.HYBRID
+      };
+      map = new google.maps.Map(document.getElementById('map-canvas'),
+          mapOptions);
+
+      var marker = new google.maps.Marker({
+        position: map.getCenter(),
+        map: map,
+        title: 'Hello World!'
+      });
+
+      google.maps.event.addListener(map, 'center_changed', function() {
+        var center = map.getCenter();
+        marker.setPosition(center);
+        document.getElementById('latlng').value = center.lat() + ',' + center.lng();
+      });
+    }
+
+    google.maps.event.addDomListener(window, 'load', initialize);
+
+    function getLocation() {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        coords = position.coords;
+        text.textContent = 'Latitude: ' + coords.latitude + '; Longitude: ' + coords.longitude + '; Accuracy: ' + coords.accuracy;
+
+        var pos = new google.maps.LatLng(coords.latitude, coords.longitude);
+        map.setCenter(pos);
+      });
+    }
+
+    function saveLocation() {
+      var geoPoint = new Parse.GeoPoint(coords.latitude, coords.longitude);
+
+      user.set('location', geoPoint);
+      user.set('locationAccuracy', coords.accuracy);
+      user.save().then(function(user) {
+        return user.get('place').fetch();
+      }).then(function(place) {
+        text.textContent = place.get('name');
+      });
+    }
+
+    function emulateLocation() {
+      var latlng = document.getElementById('latlng').value.split(',');
+      var geoPoint = new Parse.GeoPoint(parseFloat(latlng[0]), parseFloat(latlng[1]));
+      var pos = new google.maps.LatLng(parseFloat(latlng[0]), parseFloat(latlng[1]));
+      map.setCenter(pos);
+
+      user.set('location', geoPoint);
+      user.save().then(function(user) {
+        return user.get('place').fetch();
+      }).then(function(place) {
+        text.textContent = place.get('name');
+      }, function(error) {
+        text.textContent = error.message;
+      });
+    }
+
+    function shout() {
+      var shout = new Parse.Object('Shout');
+      shout.set('content', document.getElementById('shout').value);
+      shout.save();
+    }
+
+  </script>
+</body>
+
 </html>

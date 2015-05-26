@@ -37,11 +37,14 @@ Parse.Cloud.define('flag', function(request, response) {
 });
 
 Parse.Cloud.define('listShouts', function(request, response) {
-  var location = request.params.location || request.user.get('location');
+  var place = request.params.place || request.user.get('place');
   var limit = request.params.limit;
   var page = request.params.page;
 
-  Shout.list(location, limit, page).then(response.success, response.error);
+  // Trusting on location?
+  if (user.get('locationAccuracy') > 30)
+
+  Shout.list(location, place, limit, page).then(response.success, response.error);
 });
 
 Parse.Cloud.define('listPlaces', function(request, response) {
