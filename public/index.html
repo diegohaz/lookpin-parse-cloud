@@ -86,6 +86,7 @@
       var geoPoint = new Parse.GeoPoint(coords.latitude, coords.longitude);
 
       user.set('location', geoPoint);
+      console.log(coords.accuracy);
       user.set('locationAccuracy', coords.accuracy);
       user.save().then(function(user) {
         return user.get('place').fetch();

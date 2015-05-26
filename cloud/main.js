@@ -42,9 +42,13 @@ Parse.Cloud.define('listShouts', function(request, response) {
   var page = request.params.page;
 
   // Trusting on location?
-  if (user.get('locationAccuracy') > 30)
-
-  Shout.list(location, place, limit, page).then(response.success, response.error);
+  if (user.get('locationAccuracy') > 30 && place) {
+    Parse.Object.fetchAllIfNeeded([place]).then(function() {
+      Shout.list(place.get('location'), place, limit, page).then(response.success, response.error);
+    });
+  } else {
+    Shout.list(location, place, limit, page).then(response.success, response.error);
+  }
 });
 
 Parse.Cloud.define('listPlaces', function(request, response) {

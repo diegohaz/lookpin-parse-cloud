@@ -255,7 +255,7 @@ var Place = Parse.Object.extend('Place', {
     ]);
 
     return place.first().then(function(place) {
-      while (place && !place.contains(location) && accuracy <= place.get('radius')) {
+      while (place && (!place.contains(location) || accuracy > place.get('radius'))) {
         place = place.get('parent');
       }
 

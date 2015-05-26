@@ -28,12 +28,6 @@ var User = Parse.Object.extend('_User', {
 
         return Parse.Promise.as();
       });
-    } else if (place && user.dirty('place')) {
-      return Parse.Object.fetchAllIfNeeded([place]).then(function() {
-        user.set('location', place.get('location'));
-
-        return Parse.Promise.as();
-      });
     } else {
       return Parse.Promise.as();
     }
