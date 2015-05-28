@@ -39,20 +39,6 @@ var Place = Parse.Object.extend('Place', {
       place.set('map', 'https://maps.google.com/maps?q=' + lat + ',' + lng);
     }
 
-    // Unique place_id
-    if (place.get('place_id') && place.isNew()) {
-      var equalPlace = new Parse.Query(Place);
-      equalPlace.equalTo('place_id', place.get('place_id'));
-
-      promise = equalPlace.first().then(function(equalPlace) {
-        if (equalPlace) {
-          return Parse.Promise.error('Place is already registered');
-        } else {
-          return Parse.Promise.as();
-        }
-      })
-    }
-
     // depth
     if (place.dirty('parent')) {
       promise = promise.then(function() {
