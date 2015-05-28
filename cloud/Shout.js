@@ -40,7 +40,18 @@ var Shout = Parse.Object.extend('Shout', {
         shout.setACL(acl);
       }
 
-      return Parse.Promise.as();
+      // Trusting in location
+      if (!user.canUseLocation()) {
+        var place = shout.get('place');
+
+        return Parse.Object.fetchAllIfNeeded([place]).then(function() {
+          shout.set('location', place.get('location'));
+
+          return Parse.Promise.as();
+        });
+      } else {
+        return Parse.Promise.as();
+      }
     });
   },
 
@@ -100,6 +111,7 @@ var Shout = Parse.Object.extend('Shout', {
 
   list: function(location, place, limit, page) {
     // Params
+    var Place = require('cloud/Place');
     var parents = [];
     limit = limit || 20;
     page  = page  || 0;
@@ -107,22 +119,30 @@ var Shout = Parse.Object.extend('Shout', {
     if (!location) return Parse.Promise.error('Empty location');
 
     // Query
+    var placeQuery = new Parse.Query(Place);
     var shouts = new Parse.Query(Shout);
     var now    = Date.now();
 
-    shouts.near('location', location);
-    shouts.withinKilometers('location', location, 20000);
-
     // Include 4 levels of places depth
+    placeQuery.include([
+      'parent', 'parent.parent', 'parent.parent.parent',
+      'parent.parent.parent.parent', 'parent.parent.parent.parent.parent',
+      'parent.parent.parent.parent.parent.parent'
+    ]);
     shouts.include([
       'place', 'place.parent', 'place.parent.parent', 'place.parent.parent.parent',
       'place.parent.parent.parent.parent', 'place.parent.parent.parent.parent.parent',
       'place.parent.parent.parent.parent.parent.parent',
     ]);
+
+    placeQuery.equalTo('objectId', place.id);
+
+    shouts.near('location', location);
+    shouts.withinKilometers('location', location, 20000);
     shouts.limit(limit);
     shouts.skip(limit * page);
 
-    return place.fetch().then(function() {
+    return placeQuery.first().then(function(place) {
       var parent = place;
 
       while (parent) {

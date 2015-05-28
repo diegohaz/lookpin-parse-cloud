@@ -22,7 +22,7 @@ var User = Parse.Object.extend('_User', {
     }
 
     // Place user
-    if (location && user.dirty('location')) {
+    if (location && user.dirty('location') && !user.get('ignoreLocation')) {
       return Place.get(location, accuracy).then(function(place) {
         user.set('place', place);
 
@@ -141,6 +141,10 @@ var User = Parse.Object.extend('_User', {
     info.remove('deletes', shout);
 
     return info.save();
+  },
+
+  canUseLocation: function() {
+    return this.get('locationAccuracy') <= 30 && !this.get('ignoreLocation');
   }
 });
 

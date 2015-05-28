@@ -149,15 +149,6 @@
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
-        "location": {"__type": "GeoPoint", "latitude": -22.978994106251633, "longitude": -43.23373297951508},
-        "map": "https://maps.google.com/maps?q=-22.978994106251633,-43.23373297951508",
-        "name": "Barraca",
-        "depth": 5,
-        "radius": 10,
-        "types": ["university", "establishment"]
-    },{
-        "ACL": {"*": {"read": true}},
-        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
         "location": {"__type": "GeoPoint", "latitude": -22.9784746711777, "longitude": -43.23266454589384},
         "map": "https://maps.google.com/maps?q=-22.9784746711777,-43.23266454589384",
         "name": "Vila dos diretórios",

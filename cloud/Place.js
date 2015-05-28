@@ -146,17 +146,18 @@ var Place = Parse.Object.extend('Place', {
   types: {
     airport: 500,
     stadium: 300,
-    amusement_park: 300,
-    university: 300,
     cemetery: 300,
+    amusement_park: 250,
+    university: 250,
     campground: 200,
     shopping_mall: 200,
-    school: 150,
     casino: 150,
+    park: 150,
+    zoo: 150,
     museum: 100,
-    city_hall: 100,
-    zoo: 100,
     night_club: 100,
+    school: 75,
+    city_hall: 75,
     train_station: 75,
     subway_station: 50,
     grocery_or_supermarket: 40,
@@ -164,8 +165,8 @@ var Place = Parse.Object.extend('Place', {
     restaurant: 40,
     movie_theater: 30,
     library: 30,
+    food: 25,
     gym: 20,
-    food: 15,
     cafe: 10,
   },
 
@@ -192,12 +193,14 @@ var Place = Parse.Object.extend('Place', {
     }).fail(function() {
       var replaces = [
         ['State of ', ''],
+        ['MUNIC.', 'Municipal'],
         [/ ltda/i, ''],
         [/\s*\-.+$/, ''],
         [/,.+$/, ''],
+        [/col[e|é]gio estadual/i, 'C.E.'],
         [/escola municipal/i, 'E.M.'],
         [/escola estadual/i, 'E.E.'],
-        [/\d+\.\d+\.\d+ /, ''],
+        [/\d+\.\d+\.\d+\.? /, ''],
       ];
 
       for (i in replaces) {
@@ -321,7 +324,7 @@ var Place = Parse.Object.extend('Place', {
           location: location.latitude + ',' + location.longitude,
           key: 'AIzaSyAFnlqLMFUeDJo-sRRTED7h-oyDcw3F3GM',
           rankby: 'prominence',
-          radius: 500,
+          radius: 300,
           types: Object.keys(Place.types).join('|')
         }
       }).then(function(httpResponse) {
@@ -364,7 +367,7 @@ var Place = Parse.Object.extend('Place', {
     var places = new Parse.Query(Place);
 
     places.near('location', location);
-    places.withinKilometers('location', location, 1);
+    places.withinKilometers('location', location, 0.5);
     places.notEqualTo('types', 'political');
     places.limit(limit - 3);
 
