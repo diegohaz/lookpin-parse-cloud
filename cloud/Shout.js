@@ -113,7 +113,7 @@ var Shout = Parse.Object.extend('Shout', {
     // Params
     var Place = require('cloud/Place');
     var parents = [];
-    limit = limit || 20;
+    limit = limit || 15;
     page  = page  || 0;
 
     if (!location) return Parse.Promise.error('Empty location');

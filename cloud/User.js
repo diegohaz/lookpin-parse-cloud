@@ -144,7 +144,7 @@ var User = Parse.Object.extend('_User', {
   },
 
   canUseLocation: function() {
-    return this.get('locationAccuracy') <= 30 && !this.get('ignoreLocation');
+    return this.get('locationAccuracy') <= 65 && !this.get('ignoreLocation');
   }
 });
 
