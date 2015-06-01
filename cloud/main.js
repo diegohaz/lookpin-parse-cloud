@@ -66,3 +66,7 @@ Parse.Cloud.beforeSave(Shout, function(request, response) {
   request.object.get('user') || request.object.set('user', request.user);
   request.object.filter().then(response.success, response.error);
 });
+
+Parse.Cloud.job('trendingPlaces', function(request, status) {
+  Place.setTrends().then(status.success, status.error);
+});
