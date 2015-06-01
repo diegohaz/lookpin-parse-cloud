@@ -44,7 +44,7 @@ Parse.Cloud.define('listShouts', function(request, response) {
   var page = request.params.page;
 
   // Trusting on location?
-  if (place && !user.canUseLocation()) {
+  if (place && !user.trustedLocation()) {
     Parse.Object.fetchAllIfNeeded([place]).then(function() {
       Shout.list(place.get('location'), place, limit, page).then(response.success, response.error);
     });

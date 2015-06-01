@@ -7,22 +7,25 @@ var User = Parse.Object.extend('_User', {
 
   filter: function() {
     var user = this;
+
+    // Defaults
+    user.get('ignoreLocation') || user.set('ignoreLocation', false);
+    user.get('language') || user.set('language', 'en');
+
+    // Vars
     var place = user.get('place');
     var feeling = user.get('feeling');
     var location = user.get('location');
-    var accuracy = user.get('locationAccuracy') || 20;
+    var accuracy = user.get('locationAccuracy');
+    var ignore = user.get('ignoreLocation');
 
     // Validate feeling
     if (feeling && !Feeling.validate(feeling)) {
       return Parse.Promise.error('Invalid feeling');
     }
 
-    if (!user.get('locationAccuracy')) {
-      user.set('locationAccuracy', accuracy);
-    }
-
     // Place user
-    if (location && user.dirty('location') && !user.get('ignoreLocation')) {
+    if (location && user.dirty('location') && !ignore) {
       return Place.get(location, accuracy).then(function(place) {
         user.set('place', place);
 
@@ -78,72 +81,7 @@ var User = Parse.Object.extend('_User', {
     });
   },
 
-  echo: function(shout) {
-    var user = this;
-    var info = user.get('info');
-
-    return Parse.Object.fetchAllIfNeeded([shout, info]).then(function() {
-      var echoed = _.where(info.get('echoes'), {id: shout.id});
-
-      if (!echoed.length) {
-        shout.echo();
-
-        info.addUnique('echoes', shout);
-        info.remove('deletes', shout);
-
-        user.set('feeling', shout.get('feeling'));
-
-        return Parse.Object.saveAll([user, info]);
-      } else {
-        return Parse.Promise.error('User cannot echo a shout twice');
-      }
-    });
-  },
-
-  unecho: function(shout) {
-    var user = this;
-    var info = user.get('info');
-
-    return Parse.Object.fetchAllIfNeeded([shout, info]).then(function() {
-      var echoed = _.where(info.get('echoed'), {id: shout.id});
-
-      if (echoed.length) {
-        shout.unecho();
-        info.remove('echoes', shout);
-
-        return info.save();
-      } else {
-        return Parse.Promise.error('Cannot unecho a unechoed shout');
-      }
-    });
-  },
-
-  delete: function(shout) {
-    var user = this;
-    var info = user.get('info');
-
-    return Parse.Object.fetchAllIfNeeded([shout, info]).then(function() {
-      if (shout.get('user').id == user.id) {
-        return shout.destroy();
-      } else {
-        info.addUnique('deletes', shout);
-        info.remove('echoes', shout);
-
-        return info.save();
-      }
-    });
-  },
-
-  restore: function(shout) {
-    var user = this;
-    var info = user.get('info');
-
-    info.remove('deletes', shout);
-
-    return info.save();
-  },
-
-  canUseLocation: function() {
+  trustedLocation: function() {
     return this.get('locationAccuracy') <= 65 && !this.get('ignoreLocation');
   }
 });

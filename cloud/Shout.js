@@ -41,7 +41,7 @@ var Shout = Parse.Object.extend('Shout', {
       }
 
       // Trusting in location
-      if (!user.canUseLocation()) {
+      if (!user.trustedLocation()) {
         var place = shout.get('place');
 
         return Parse.Object.fetchAllIfNeeded([place]).then(function() {
@@ -87,18 +87,6 @@ var Shout = Parse.Object.extend('Shout', {
         return Parse.Promise.as();
       }
     });
-  },
-
-  echo: function() {
-    this.increment('echoes');
-
-    return this.save(null, {useMasterKey: true});
-  },
-
-  unecho: function() {
-    this.increment('echoes', -1);
-
-    return this.save(null, {useMasterKey: true});
   },
 
   flag: function(description) {
