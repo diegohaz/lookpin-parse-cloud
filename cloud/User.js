@@ -1,7 +1,6 @@
 var Feeling = require('cloud/Feeling');
 var Shout = require('cloud/Shout');
 var Place = require('cloud/Place');
-var _ = require('underscore');
 
 var User = Parse.Object.extend('_User', {
 
@@ -36,31 +35,8 @@ var User = Parse.Object.extend('_User', {
     }
   },
 
-  propagate: function() {
-    var user = this;
-
-    // Info
-    if (!user.get('info')) {
-      var info = new Parse.Object('UserInfo');
-
-      info.set('echoes', []);
-      info.set('deletes', []);
-      info.setACL(new Parse.ACL(user));
-
-      return info.save().then(function(info) {
-        user.set('info', info);
-        return user.save(null, {useMasterKey: true});
-      });
-    } else {
-      return Parse.Promise.as();
-    }
-  },
-
   wipe: function() {
     Parse.Cloud.useMasterKey();
-
-    // Delete user info
-    this.get('info') && this.get('info').destroy();
 
     // Delete shouts
     var shouts = new Parse.Query(Shout);
