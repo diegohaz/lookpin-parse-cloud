@@ -7,7 +7,6 @@ var Place = Parse.Object.extend('Place', {
   filter: function() {
     var place   = this;
     var parent  = place.get('parent');
-    var promise = Parse.Promise.as();
 
     // Validations
     if (!place.get('name')) return Parse.Promise.error('Empty name');
@@ -23,6 +22,10 @@ var Place = Parse.Object.extend('Place', {
     }
 
     // Defaults
+    place.get('promoted') || place.set('promoted', false);
+    place.get('verified') || place.set('verified', false);
+
+    // Radius
     if (!place.get('radius') && place.get('types')) {
       for (type in Place.types) {
         if (place.is(type)) {
@@ -39,11 +42,9 @@ var Place = Parse.Object.extend('Place', {
       place.set('map', 'https://maps.google.com/maps?q=' + lat + ',' + lng);
     }
 
-    // depth
-    if (place.dirty('parent')) {
-      promise = promise.then(function() {
-        return Parse.Object.fetchAllIfNeeded([parent])
-      }).then(function() {
+    // Depth
+    if (place.dirty('parent') && parent) {
+      return Parse.Object.fetchAllIfNeeded([parent]).then(function() {
         place.set('depth', parent.get('depth') + 1);
 
         return Parse.Promise.as();
@@ -51,12 +52,8 @@ var Place = Parse.Object.extend('Place', {
     } else {
       place.get('depth') || place.set('depth', 0);
 
-      promise = promise.then(function() {
-        return Parse.Promise.as();
-      });
+      return Parse.Promise.as();
     }
-
-    return promise;
   },
 
   wipe: function() {
@@ -96,10 +93,10 @@ var Place = Parse.Object.extend('Place', {
       promise = Parse.Promise.as();
     }
 
-    return promise.then(function() {
-      return adept(Parse.User, parent);
-    }).then(function() {
+    return promise.always(function() {
       return adept(Place, parent);
+    }).then(function() {
+      return adept(Parse.User, parent);
     }).then(function() {
       return adept(Shout, parent);
     });
@@ -159,8 +156,10 @@ var Place = Parse.Object.extend('Place', {
   create: function(place_id, name, location, parent, radius, types) {
     var equalPlace = new Parse.Query(Place);
 
+    // Seek for equal place_id
     equalPlace.equalTo('place_id', place_id);
 
+    // Verify first in saved places
     for (var i = 0; i < Place.places.length; i++) {
       var place = Place.places[i];
 
@@ -169,6 +168,7 @@ var Place = Parse.Object.extend('Place', {
       }
     }
 
+    // After, verify in data
     return equalPlace.first().then(function(equalPlace) {
       if (equalPlace) {
         Place.places.push(equalPlace);
@@ -236,7 +236,7 @@ var Place = Parse.Object.extend('Place', {
     var place = new Parse.Query(Place);
 
     place.near('location', location);
-    place.withinKilometers('location', location, 20000);
+    place.withinKilometers('location', location, 100);
     place.include([
       'parent', 'parent.parent', 'parent.parent.parent',
       'parent.parent.parent.parent', 'parent.parent.parent.parent.parent',
