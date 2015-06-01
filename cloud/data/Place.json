@@ -8,7 +8,9 @@
         "objectId": "BdM0rDruXH",
         "place_id": "ChIJzyjM68dZnAARYz4p8gYVWik",
         "radius": 3.1938647758948402e+06,
-        "types": ["country", "political"]
+        "types": ["country", "political"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "depth": 1,
@@ -19,7 +21,9 @@
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "BdM0rDruXH"},
         "place_id": "ChIJw4riypQYmAAR0IMFwRrDSQM",
         "radius": 248983.70453161767,
-        "types": ["administrative_area_level_1", "political"]
+        "types": ["administrative_area_level_1", "political"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "depth": 2,
@@ -30,7 +34,9 @@
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "HGv0GEHKOg"},
         "place_id": "ChIJW6AIkVXemwARTtIvZ2xC3FA",
         "radius": 39965.33798174921,
-        "types": ["locality", "political"]
+        "types": ["locality", "political"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "depth": 3,
@@ -41,7 +47,9 @@
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "UPoH3hLHVi"},
         "place_id": "ChIJQ6kctjLUmwARvnL66pdFd7w",
         "radius": 2076.5691191760343,
-        "types": ["neighborhood", "political"]
+        "types": ["neighborhood", "political"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "z7O24lnvoC"},
@@ -52,7 +60,9 @@
         "name": "PUC-Rio",
         "depth": 4,
         "radius": 250,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -61,7 +71,9 @@
         "name": "RDC",
         "depth": 5,
         "radius": 40,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -70,7 +82,9 @@
         "name": "Tendas",
         "depth": 5,
         "radius": 30,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -79,7 +93,9 @@
         "name": "Pilotis",
         "depth": 5,
         "radius": 50,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -88,7 +104,9 @@
         "name": "Bandejão",
         "depth": 5,
         "radius": 25,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -97,7 +115,9 @@
         "name": "Edifício Cardeal Leme",
         "depth": 5,
         "radius": 40,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -107,7 +127,9 @@
         "name": "Gourmet do Campus",
         "depth": 5,
         "radius": 20,
-        "types": ["restaurant", "food", "establishment"]
+        "types": ["restaurant", "food", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -117,7 +139,9 @@
         "name": "Igreja Sagrado Coração de Jesus",
         "depth": 5,
         "radius": 20,
-        "types": ["church", "place_of_worship", "establishment"]
+        "types": ["church", "place_of_worship", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -126,7 +150,9 @@
         "name": "IMA",
         "depth": 5,
         "radius": 20,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -136,16 +162,9 @@
         "name": "IAG",
         "depth": 5,
         "radius": 30,
-        "types": ["university", "establishment"]
-    },{
-        "ACL": {"*": {"read": true}},
-        "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
-        "location": {"__type": "GeoPoint", "latitude": -22.978754577102926, "longitude": -43.23228190443802},
-        "map": "https://maps.google.com/maps?q=-22.978754577102926,-43.23228190443802",
-        "name": "Biblioteca",
-        "depth": 5,
-        "radius": 25,
-        "types": ["library", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -154,7 +173,9 @@
         "name": "Vila dos diretórios",
         "depth": 5,
         "radius": 50,
-        "types": ["university", "establishment"]
+        "types": ["university", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -163,7 +184,9 @@
         "name": "Ginásio",
         "depth": 5,
         "radius": 25,
-        "types": ["gym", "establishment"]
+        "types": ["gym", "establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "yG4CtNrQ2v"},
@@ -174,7 +197,9 @@
         "place_id": "ChIJE8o5a7bVmwARq0jHH50xPuY",
         "depth": 5,
         "radius": 25,
-        "types": ["establishment"]
+        "types": ["establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL": {"*": {"read": true}},
         "parent": {"__type": "Pointer", "className": "Place", "objectId": "LtH0G62ccA"},
@@ -183,7 +208,9 @@
         "name": "BEPiD",
         "depth": 6,
         "radius": 20,
-        "types": ["establishment"]
+        "types": ["establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL":{"*":{"read":true}},
         "depth":4,
@@ -194,7 +221,9 @@
         "parent":{"__type":"Pointer","className":"Place","objectId":"z7O24lnvoC"},
         "place_id":"ChIJfaUZTrfVmwARCnkGu8F9V3A",
         "radius":75,
-        "types":["shopping_mall","establishment"]
+        "types":["shopping_mall","establishment"],
+        "verified": true,
+        "promoted": false
     },{
         "ACL":{"*":{"read":true}},
         "depth":4,
@@ -203,6 +232,8 @@
         "name":"Minhocão",
         "parent":{"__type":"Pointer","className":"Place","objectId":"z7O24lnvoC"},
         "radius":100,
-        "types":["establishment"]
+        "types":["establishment"],
+        "verified": true,
+        "promoted": false
     }
 ]}
