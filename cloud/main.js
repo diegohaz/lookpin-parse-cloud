@@ -2,20 +2,6 @@ var User = require('cloud/User');
 var Place = require('cloud/Place');
 var Shout = require('cloud/Shout');
 
-Parse.Cloud.define('echo', function(request, response) {
-  var shout = new Shout;
-  shout.id = request.params.shoutId;
-
-  request.user.echo(shout).then(response.success, response.error);
-});
-
-Parse.Cloud.define('unecho', function(request, response) {
-  var shout = new Shout;
-  shout.id = request.params.shoutId;
-
-  request.user.unecho(shout).then(response.success, response.error);
-});
-
 Parse.Cloud.define('delete', function(request, response) {
   var shout = new Shout;
   shout.id = request.params.shoutId;
@@ -64,10 +50,6 @@ Parse.Cloud.beforeSave(User, function(request, response) {
   request.object.filter().then(response.success, response.error);
 });
 
-Parse.Cloud.afterSave(User, function(request, response) {
-  request.object.propagate();
-});
-
 Parse.Cloud.beforeDelete(User, function(request, response) {
   request.object.wipe().then(response.success, response.error);
 });
@@ -83,8 +65,4 @@ Parse.Cloud.beforeDelete(Place, function(request, response) {
 Parse.Cloud.beforeSave(Shout, function(request, response) {
   request.object.get('user') || request.object.set('user', request.user);
   request.object.filter().then(response.success, response.error);
-});
-
-Parse.Cloud.beforeDelete(Shout, function(request, response) {
-  request.object.wipe().then(response.success, response.error);
 });
