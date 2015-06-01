@@ -16,7 +16,6 @@ var Shout = Parse.Object.extend('Shout', {
       shout.get('location') || shout.set('location', user.get('location'));
       shout.get('place')    || shout.set('place', user.get('place'));
       shout.get('feeling')  || shout.set('feeling', user.get('feeling'));
-      shout.get('echoes')   || shout.set('echoes', 0);
       shout.get('flags')    || shout.set('flags', 0);
 
       // Empty validations
@@ -28,8 +27,8 @@ var Shout = Parse.Object.extend('Shout', {
       // More validations
       if (!Feeling.validate(shout.get('feeling'))) {
         return Parse.Promise.error('Invalid feeling');
-      } else if (shout.get('content').length > 255) {
-        return Parse.Promise.error('Content should not be larger than 255 characters');
+      } else if (shout.get('content').length > 500) {
+        return Parse.Promise.error('Content should not be larger than 500 characters');
       }
 
       // ACL
@@ -55,41 +54,7 @@ var Shout = Parse.Object.extend('Shout', {
     });
   },
 
-  wipe: function() {
-    Parse.Cloud.useMasterKey();
-    var shout = this;
-
-    // Seek users which have references to shout
-    var wasEchoed = new Parse.Query('UserInfo');
-    wasEchoed.equalTo('echoes', shout);
-
-    var wasDeleted = new Parse.Query('UserInfo');
-    wasDeleted.equalTo('deletes', shout);
-
-    // Finally, query
-    var query = Parse.Query.or(wasEchoed, wasDeleted);
-
-    return query.find().then(function(infos) {
-      var infosToSave = [];
-
-      for (var i = 0; i < infos.length; i++) {
-        var info = infos[i];
-
-        info.remove('echoes', shout);
-        info.remove('deletes', shout);
-
-        infosToSave.push(info);
-      }
-
-      if (infosToSave.length) {
-        return Parse.Object.saveAll(infosToSave);
-      } else {
-        return Parse.Promise.as();
-      }
-    });
-  },
-
-  flag: function(description) {
+  flag: function() {
     this.increment('flags');
 
     return this.save(null, {useMasterKey: true});
@@ -150,12 +115,11 @@ var Shout = Parse.Object.extend('Shout', {
         var parent  = place.get('parent');
 
         // Rank
-        var echoes  = shout.get('echoes') || 0;
         var minutes = (now - shout.createdAt.getTime()) / 60000;
         var meters  = location.kilometersTo(shout.get('location')) * 1000;
 
-        // 1 meter = 3 seconds = 10 echoes
-        ranks[i] = meters + minutes/20 - echoes/10;
+        // 1 meter = 3 seconds
+        ranks[i] = meters + minutes/20;
 
         // Place radius
         while (parent && !_.where(parents, {id: parent.id}).length) {

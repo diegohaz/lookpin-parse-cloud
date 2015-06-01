@@ -19,7 +19,7 @@ Parse.Cloud.define('restore', function(request, response) {
 Parse.Cloud.define('flag', function(request, response) {
   var shout = new Shout;
   shout.id = request.params.shoutId;
-  shout.flag(request.params.description).then(response.success, response.error);
+  shout.flag().then(response.success, response.error);
 });
 
 Parse.Cloud.define('listShouts', function(request, response) {
