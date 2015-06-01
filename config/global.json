@@ -1,14 +1,14 @@
 {
-    "applications": {
-        "_default": {
-            "link": "shoutler-dev2"
-        },
-        "shoutler-dev2": {
-            "applicationId": "UlT4gOYazGB5OfO02VwcAtDtXrTrPRtiOKK8uofD",
-            "masterKey": "mawgqgjvxT9WaLO4ewFWtxX5Mz90IS6LpifX7CbV"
-        }
+  "global": {
+    "parseVersion": "1.3.5"
+  },
+  "applications": {
+    "_default": {
+      "link": "shoutler-dev3"
     },
-    "global": {
-        "parseVersion": "1.3.5"
+    "shoutler-dev3": {
+      "applicationId": "2HGaUnqzVnOxbphHDbx5rmFiPSApCej3kA9y5Cod",
+      "masterKey": "cnpRDd9FQ9HX7PwPHoE0xdKWh4VHhQ1tIBrGZC34"
     }
+  }
 }
