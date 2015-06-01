@@ -1,4 +1,5 @@
 var _ = require('underscore');
+var moment = require('moment');
 var Feeling = require('cloud/Feeling');
 
 var Shout = Parse.Object.extend('Shout', {
@@ -127,8 +128,24 @@ var Shout = Parse.Object.extend('Shout', {
           parent = parent.get('parent');
         }
 
-        // Don't return unnecessary places
-        shout.attributes.place.attributes.parent = null
+        // Custom attributes
+        shout.attributes.time = moment(shout.createdAt).fromNow();
+        shout.attributes.place = place.get('name');
+        shout.attributes.distance = +meters.toFixed(1);
+
+        if (shout.attributes.distance >= 1000) {
+          shout.attributes.distance = Math.round(shout.attributes.distance/1000) + 'km';
+        } else {
+          shout.attributes.distance += 'm';
+        }
+
+        // Don't return unnecessary attributes
+        delete shout.attributes.ACL
+        delete shout.attributes.user
+        delete shout.attributes.location
+        delete shout.attributes.flags
+        delete shout.updatedAt
+        delete shout.createdAt
       }
 
       if (shouts.length) {
