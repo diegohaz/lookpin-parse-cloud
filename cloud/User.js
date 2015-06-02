@@ -25,7 +25,7 @@ var User = Parse.Object.extend('_User', {
 
     // Place user
     if (location && user.dirty('location') && !ignore) {
-      return Place.get(location, accuracy).then(function(place) {
+      return Place.get(location, accuracy, true).then(function(place) {
         user.set('place', place);
 
         return Parse.Promise.as();

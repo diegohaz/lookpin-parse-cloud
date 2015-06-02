@@ -232,7 +232,7 @@ var Place = Parse.Object.extend('Place', {
     return Place.create(placeId, name, placeLocation, parent, radius, types);
   },
 
-  get: function(location, accuracy) {
+  get: function(location, accuracy, getEstablishment) {
     Parse.Cloud.useMasterKey();
 
     var place = new Parse.Query(Place);
@@ -255,9 +255,15 @@ var Place = Parse.Object.extend('Place', {
       if (place && !place.is('political')) {
         return Parse.Promise.as(place);
       } else {
-        return Place.getPoliticalFromGoogle(location).fail(function(error) {
-          return Parse.Promise.as(place);
-        });
+        if (getEstablishment) {
+          return Place.getEstablishmentFromGoogle(location, accuracy).fail(function() {
+            return Parse.Promise.as(place);
+          });
+        } else {
+          return Place.getPoliticalFromGoogle(location).fail(function(error) {
+            return Parse.Promise.as(place);
+          });
+        }
       }
     });
   },
@@ -308,7 +314,7 @@ var Place = Parse.Object.extend('Place', {
   },
 
   getEstablishmentFromGoogle: function(location, accuracy) {
-    Place.getPoliticalFromGoogle(location).then(function(place) {
+    return Place.getPoliticalFromGoogle(location).then(function(place) {
       // Call Google Places API
       return Parse.Cloud.httpRequest({
         url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
@@ -362,7 +368,7 @@ var Place = Parse.Object.extend('Place', {
     places.notEqualTo('types', 'political');
     places.limit(limit - 3);
 
-    return Places.getEstablishmentFromGoogle().always(function() {
+    return Places.getEstablishmentFromGoogle(location).always(function() {
       return places.find();
     }).then(function(places) {
       var regions = new Parse.Query(Place);
