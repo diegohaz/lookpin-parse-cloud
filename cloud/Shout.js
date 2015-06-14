@@ -133,12 +133,6 @@ var Shout = Parse.Object.extend('Shout', {
         shout.attributes.place = place.get('name');
         shout.attributes.distance = +meters.toFixed(1);
 
-        if (shout.attributes.distance >= 1000) {
-          shout.attributes.distance = Math.round(shout.attributes.distance/1000) + 'km';
-        } else {
-          shout.attributes.distance += 'm';
-        }
-
         // Don't return unnecessary attributes
         delete shout.attributes.ACL
         delete shout.attributes.user
