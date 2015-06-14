@@ -130,6 +130,7 @@ var Shout = Parse.Object.extend('Shout', {
 
         // Custom attributes
         shout.attributes.time = moment(shout.createdAt).fromNow();
+        shout.attributes.url = 'http://shoutler.com/shouts/' + shout.id;
         shout.attributes.place = place.get('name');
         shout.attributes.distance = +meters.toFixed(1);
 
