@@ -40,18 +40,7 @@ var Shout = Parse.Object.extend('Shout', {
         shout.setACL(acl);
       }
 
-      // Trusting in location
-      if (!user.trustedLocation()) {
-        var place = shout.get('place');
-
-        return Parse.Object.fetchAllIfNeeded([place]).then(function() {
-          shout.set('location', place.get('location'));
-
-          return Parse.Promise.as();
-        });
-      } else {
-        return Parse.Promise.as();
-      }
+      return Parse.Promise.as();
     });
   },
 
@@ -116,11 +105,11 @@ var Shout = Parse.Object.extend('Shout', {
         var parent  = place.get('parent');
 
         // Rank
-        var minutes = (now - shout.createdAt.getTime()) / 60000;
+        var seconds = (now - shout.createdAt.getTime()) / 3600000;
         var meters  = location.kilometersTo(shout.get('location')) * 1000;
 
-        // 1 meter = 3 seconds
-        ranks[i] = meters + minutes/20;
+        // Walkspeed = 1.5m/s
+        ranks[i] = meters * 1.5 + seconds;
 
         // Place radius
         while (parent && !_.where(parents, {id: parent.id}).length) {
@@ -130,7 +119,7 @@ var Shout = Parse.Object.extend('Shout', {
 
         // Custom attributes
         shout.attributes.time = moment(shout.createdAt).fromNow();
-        shout.attributes.url = 'http://shoutler.com/shouts/' + shout.id;
+        shout.attributes.url = 'http://shoutler.com/s/' + shout.id;
         shout.attributes.place = place.get('name');
         shout.attributes.distance = +meters.toFixed(1);
 
