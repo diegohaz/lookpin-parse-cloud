@@ -39,11 +39,18 @@ Parse.Cloud.define('listShouts', function(request, response) {
   }
 });
 
+Parse.Cloud.define('savePlace', function(request, response) {
+  var id = request.params.id;
+  var name = request.params.name;
+  var location = request.params.location;
+
+  Place.savePlace(id, name, location).then(response.success, response.error);
+});
+
 Parse.Cloud.define('listPlaces', function(request, response) {
   var location = request.params.location || request.user.get('location');
-  var limit = request.params.limit;
 
-  Place.list(location, limit).then(response.success, response.error);
+  Place.list(location).then(response.success, response.error);
 });
 
 Parse.Cloud.beforeSave(User, function(request, response) {
