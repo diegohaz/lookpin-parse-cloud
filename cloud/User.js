@@ -56,10 +56,6 @@ var User = Parse.Object.extend('_User', {
         return Parse.Promise.as();
       }
     });
-  },
-
-  trustedLocation: function() {
-    return this.get('locationAccuracy') <= 65 && !this.get('ignoreLocation');
   }
 });
 
