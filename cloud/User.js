@@ -20,20 +20,7 @@ var User = Parse.Object.extend('_User', {
       return Parse.Promise.error('Invalid feeling');
     }
 
-    // Place user
-    if (place) {
-      return Parse.Object.fetchAllIfNeeded([place]).then(function() {
-        if (place.contains(location)) {
-          return Parse.Promise.as();
-        } else {
-          user.unset('place');
-
-          return Parse.Promise.as();
-        }
-      });
-    } else {
-      return Parse.Promise.as();
-    }
+    return Parse.Promise.as();
   },
 
   wipe: function() {
