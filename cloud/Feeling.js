@@ -4,7 +4,7 @@ function Feeling(name) {
   this.name = name;
 }
 
-Feeling.feelings = ['red', 'green', 'blue', 'black'];
+Feeling.feelings = ['red', 'blue', 'black'];
 
 Feeling.validate = function(feeling) {
   if (~Feeling.feelings.indexOf(feeling)) {
