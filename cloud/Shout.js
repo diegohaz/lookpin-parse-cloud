@@ -15,7 +15,6 @@ var Shout = Parse.Object.extend('Shout', {
     return user.fetch().then(function() {
       // Defaults
       shout.get('location') || shout.set('location', user.get('location'));
-      shout.get('place')    || shout.set('place', user.get('place'));
       shout.get('feeling')  || shout.set('feeling', user.get('feeling'));
       shout.get('flags')    || shout.set('flags', 0);
 
