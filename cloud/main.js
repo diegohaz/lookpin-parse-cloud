@@ -24,19 +24,12 @@ Parse.Cloud.define('flag', function(request, response) {
 
 Parse.Cloud.define('listShouts', function(request, response) {
   var user = request.user;
-  var place = request.params.place || user.get('place');
   var location = request.params.location || user.get('location');
+  var place = request.params.place;
   var limit = request.params.limit;
   var page = request.params.page;
 
-  // Trusting on location?
-  if (place && !user.trustedLocation()) {
-    Parse.Object.fetchAllIfNeeded([place]).then(function() {
-      Shout.list(place.get('location'), place, limit, page).then(response.success, response.error);
-    });
-  } else {
-    Shout.list(location, place, limit, page).then(response.success, response.error);
-  }
+  Shout.list(location, place, limit, page).then(response.success, response.error);
 });
 
 Parse.Cloud.define('savePlace', function(request, response) {
