@@ -81,7 +81,11 @@ var Place = Parse.Object.extend('Place', {
 
 }, {
 
-  ignoreCategories: ['4f2a25ac4b909258e854f55f'],
+  ignoreCategories: [
+    '4f2a25ac4b909258e854f55f', '50aa9e094b90af0d42d5de0d', '5345731ebcbc57f1066c39b2',
+    '530e33ccbcbc57f1066bbff7', '530e33ccbcbc57f1066bbff8', '530e33ccbcbc57f1066bbff3',
+    '530e33ccbcbc57f1066bbff9'
+  ],
 
   list: function(location) {
     Parse.Cloud.useMasterKey();
