@@ -234,63 +234,6 @@ var Place = Parse.Object.extend('Place', {
     }).then(function(places) {
       return Parse.Promise.as(places[places.length - 1]);
     });
-  },
-
-  setTrends: function() {
-    Parse.Cloud.useMasterKey();
-
-    var placesToSave = [];
-
-    // Clear places
-    var places = new Parse.Query(Place);
-
-    places.exists('shouts');
-    return places.each(function(place) {
-      place.unset('shouts');
-      place.save();
-    }).always(function() {
-      // Trending
-      var date = new Date();
-      var yesterday = new Date(date.setDate(date.getDate() - 1));
-      var shouts = new Parse.Query(Shout);
-
-      shouts.greaterThan('createdAt', yesterday);
-      shouts.include('place');
-
-      return shouts.each(function(shout) {
-        var place = shout.get('place');
-
-        if (!~place.get('types').indexOf('establishment')) {
-          return;
-        }
-
-        var matches = _.where(placesToSave, {id: place.id});
-
-        if (matches.length) {
-          place = matches[0];
-        } else {
-          place.feelings = {};
-          place.feelings.red = 0;
-          place.feelings.green = 0;
-          place.feelings.blue = 0;
-          place.feelings.black = 0;
-          placesToSave.push(place);
-        }
-
-        place.feelings[shout.get('feeling')]++;
-
-        var flngs = place.feelings;
-        var max = Math.max(flngs.red, flngs.green, flngs.blue, flngs.black);
-        for (var feeling in flngs) if (flngs[feeling] == max) break;
-
-        place.set('feeling', feeling);
-        place.increment('shouts');
-      });
-    }).always(function() {
-      return Parse.Object.saveAll(placesToSave);
-    }).then(function() {
-      return Parse.Promise.as();
-    });
   }
 
 });
