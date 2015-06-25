@@ -23,7 +23,6 @@ var Place = Parse.Object.extend('Place', {
     }
 
     // Defaults
-    place.get('promoted') || place.set('promoted', false);
     place.get('verified') || place.set('verified', false);
 
     return Parse.Promise.as();
