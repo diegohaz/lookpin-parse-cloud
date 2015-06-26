@@ -125,7 +125,6 @@ var Shout = Parse.Object.extend('Shout', {
         // Don't return unnecessary attributes
         delete shout.attributes.ACL
         delete shout.attributes.user
-        delete shout.attributes.location
         delete shout.attributes.flags
         delete shout.updatedAt
         delete shout.createdAt
